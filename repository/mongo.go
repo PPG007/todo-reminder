@@ -77,5 +77,5 @@ func (m mongoRepository) Count(ctx context.Context, collection string, condition
 }
 
 func (m mongoRepository) FindAndApply(ctx context.Context, collection string, condition bson.M, change qmgo.Change, result interface{}) error {
-	return m.client.Database.Collection(collection).Find(ctx, condition).Apply(change, &result)
+	return m.client.Database.Collection(collection).Find(ctx, condition).Apply(change, result)
 }

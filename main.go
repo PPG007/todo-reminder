@@ -31,6 +31,7 @@ func startGin() {
 }
 
 func main() {
-	go cron.Start()
-	startGin()
+	//go cron.Start()
+	//startGin()
+	cron.RefreshHoliday()
 }

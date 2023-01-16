@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	C_CHINA_HOLIDAY = "C_CHINA_HOLIDAY"
+	C_CHINA_HOLIDAY = "chinaHoliday"
 )
 
 var (
@@ -23,11 +23,16 @@ type ChinaHoliday struct {
 
 func (c *ChinaHoliday) Create(ctx context.Context) error {
 	condition := bsoncodec.M{
-		"date":         c.Date,
-		"isWorkingDay": c.IsWorkingDay,
+		"date": c.Date,
 	}
 	change := qmgo.Change{
-		Upsert: true,
+		Upsert:    true,
+		ReturnNew: true,
+		Update: bsoncodec.M{
+			"$set": bsoncodec.M{
+				"isWorkingDay": c.IsWorkingDay,
+			},
+		},
 	}
 	return repository.Mongo.FindAndApply(ctx, C_CHINA_HOLIDAY, condition, change, c)
 }

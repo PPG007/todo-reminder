@@ -2,9 +2,8 @@ package cron
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"net/http"
+	"github.com/spf13/cast"
+	"net/url"
 	"time"
 	"todo-reminder/model"
 	"todo-reminder/util"
@@ -12,6 +11,8 @@ import (
 
 const (
 	TimorApi = "https://timor.tech/api/holiday/year/%d/"
+
+	ZhiHuApi = "https://api.apihubs.cn/holiday/get"
 )
 
 // TimorHolidayResponse https://timor.tech/api/holiday
@@ -26,32 +27,39 @@ type TimorHolidayInfo struct {
 	Date      string `json:"date"`
 }
 
-func refreshHoliday() {
+// ZhiHuHolidayResponse https://zhuanlan.zhihu.com/p/343863993
+type ZhiHuHolidayResponse struct {
+	Code    int              `json:"code"`
+	Message string           `json:"msg"`
+	Data    ZhiHuHolidayData `json:"data"`
+}
+
+type ZhiHuHolidayData struct {
+	Page  int                `json:"page"`
+	Size  int                `json:"size"`
+	Total int                `json:"total"`
+	List  []ZhiHuHolidayInfo `json:"list"`
+}
+
+type ZhiHuHolidayInfo struct {
+	Date    int `json:"date"`
+	WorkDay int `json:"workDay"`
+}
+
+func RefreshHoliday() {
 	ctx := context.Background()
 	year := time.Now().Year()
-	uri := fmt.Sprintf(TimorApi, year)
-	rawResp, err := http.Get(uri)
-	if err != nil {
+	req := &url.Values{}
+	req.Set("year", cast.ToString(year))
+	req.Set("size", "400")
+	resp, err := util.GetRestClient[ZhiHuHolidayResponse]().Get(ctx, ZhiHuApi, nil, req)
+	if err != nil || resp.Code != 0 {
 		return
 	}
-	defer rawResp.Body.Close()
-	var bytes []byte
-	for {
-		var temp []byte
-		n, err := rawResp.Body.Read(temp)
-		bytes = append(bytes, temp[:n]...)
-		if err == io.EOF {
-			break
-		}
-	}
-	resp := util.MustUnmarshalFromJson[TimorHolidayResponse](string(bytes))
-	if resp.Code != 0 {
-		return
-	}
-	for _, holidayInfo := range resp.Holiday {
-		holiday := model.ChinaHoliday{
-			Date:         holidayInfo.Date,
-			IsWorkingDay: !holidayInfo.IsHoliday,
+	for _, info := range resp.Data.List {
+		holiday := &model.ChinaHoliday{
+			IsWorkingDay: info.WorkDay == 1,
+			Date:         cast.ToString(info.Date),
 		}
 		holiday.Create(ctx)
 	}

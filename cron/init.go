@@ -12,7 +12,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = c.AddFunc("@monthly", refreshHoliday)
+	//refreshHoliday()
+	_, err = c.AddFunc("@monthly", RefreshHoliday)
 	if err != nil {
 		panic(err)
 	}
