@@ -1,0 +1,7 @@
+port: 8080
+token:
+  key: "?E(H+MbQeThWmZq4t6w9z$C&F)J@NcRf"
+  validDays: 30
+mongodb:
+  uri: "mongodb://admin:Abc123__@localhost:27017/admin?connect=direct"
+  database: "todo"
