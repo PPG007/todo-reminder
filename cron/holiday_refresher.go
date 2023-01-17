@@ -49,6 +49,9 @@ type ZhiHuHolidayInfo struct {
 func RefreshHoliday() {
 	ctx := context.Background()
 	year := time.Now().Year()
+	if time.Now().Month() == time.December {
+		year++
+	}
 	req := &url.Values{}
 	req.Set("year", cast.ToString(year))
 	req.Set("size", "400")

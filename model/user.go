@@ -2,6 +2,8 @@ package model
 
 import (
 	"context"
+	"github.com/qiniu/qmgo/options"
+	mgo_option "go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 	"todo-reminder/repository"
@@ -16,6 +18,16 @@ const (
 var (
 	CUser = &User{}
 )
+
+func init() {
+	repository.Mongo.CreateIndex(context.Background(), C_USER, options.IndexModel{
+		Key: []string{"userId", "isDeleted"},
+		IndexOptions: &mgo_option.IndexOptions{
+			Background: util.PtrValue[bool](true),
+			Unique:     util.PtrValue[bool](true),
+		},
+	})
+}
 
 type User struct {
 	Id        bsoncodec.ObjectId `json:"id" bson:"_id"`

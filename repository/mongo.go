@@ -37,10 +37,13 @@ func init() {
 type dbRepository interface {
 	Insert(ctx context.Context, collection string, docs ...interface{}) error
 	UpdateOne(ctx context.Context, collection string, condition bson.M, updater bson.M) error
+	UpdateAll(ctx context.Context, collection string, condition, updater bsoncodec.M) (int64, error)
 	FindAll(ctx context.Context, collection string, condition bson.M, result interface{}) error
 	FindOne(ctx context.Context, collection string, condition bson.M, result interface{}) error
 	Count(ctx context.Context, collection string, condition bson.M) (int64, error)
 	FindAndApply(ctx context.Context, collection string, condition bson.M, change qmgo.Change, result interface{}) error
+	CreateIndex(ctx context.Context, collection string, index options.IndexModel) error
+	FindOneWithSorter(ctx context.Context, collection string, sorter []string, condition bsoncodec.M, result interface{}) error
 }
 
 type mongoRepository struct {
@@ -78,4 +81,20 @@ func (m mongoRepository) Count(ctx context.Context, collection string, condition
 
 func (m mongoRepository) FindAndApply(ctx context.Context, collection string, condition bson.M, change qmgo.Change, result interface{}) error {
 	return m.client.Database.Collection(collection).Find(ctx, condition).Apply(change, result)
+}
+
+func (m mongoRepository) CreateIndex(ctx context.Context, collection string, index options.IndexModel) error {
+	return m.client.Database.Collection(collection).CreateOneIndex(ctx, index)
+}
+
+func (m mongoRepository) FindOneWithSorter(ctx context.Context, collection string, sorter []string, condition bsoncodec.M, result interface{}) error {
+	return m.client.Database.Collection(collection).Find(ctx, condition).Sort(sorter...).One(result)
+}
+
+func (m mongoRepository) UpdateAll(ctx context.Context, collection string, condition, updater bsoncodec.M) (int64, error) {
+	result, err := m.client.Database.Collection(collection).UpdateAll(ctx, condition, updater)
+	if err != nil {
+		return 0, err
+	}
+	return result.ModifiedCount, nil
 }
