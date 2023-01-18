@@ -37,6 +37,7 @@ type User struct {
 	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedAt time.Time          `json:"updatedAt" bson:"updatedAt"`
 	IsDeleted bool               `json:"isDeleted" bson:"isDeleted"`
+	IsEnabled bool               `json:"isEnabled" bson:"isEnabled"`
 }
 
 func (*User) Create(ctx context.Context, userId, password string) error {
@@ -101,4 +102,22 @@ func (u *User) UpsertWithoutPassword(ctx context.Context) error {
 		},
 	}
 	return repository.Mongo.FindAndApply(ctx, C_USER, condition, change, u)
+}
+
+func (*User) UpdatePassword(ctx context.Context, userId, password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	condition := bsoncodec.M{
+		"userId":    userId,
+		"isDeleted": false,
+	}
+	updater := bsoncodec.M{
+		"$set": bsoncodec.M{
+			"password":  string(hashedPassword),
+			"updatedAt": time.Now(),
+		},
+	}
+	return repository.Mongo.UpdateOne(ctx, C_USER, condition, updater)
 }

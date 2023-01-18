@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/parnurzeal/gorequest"
+	"log"
 	"net/url"
 )
 
@@ -36,6 +37,16 @@ func (g goRequester[T]) Get(ctx context.Context, url string, headers map[string]
 }
 
 func (g goRequester[T]) PostJSON(ctx context.Context, url string, headers map[string]string, params map[string]interface{}) (T, error) {
-	//TODO implement me
-	panic("implement me")
+	req := gorequest.New()
+	for k, v := range headers {
+		req = req.Set(k, v)
+	}
+	result := new(T)
+	jsonBody := MarshalToJson(params)
+	_, body, errs := req.Post(url).Send(jsonBody).EndStruct(result)
+	log.Println(string(body))
+	if len(errs) > 0 {
+		return *result, errs[0]
+	}
+	return *result, nil
 }

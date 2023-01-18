@@ -14,13 +14,15 @@ var (
 
 type goCq interface {
 	ListFriends(ctx context.Context) ([]string, error)
+	SendPrivateStringMessage(ctx context.Context, message, userId string) error
 }
 
 type goCqHttp struct {
 }
 
 const (
-	GET_FRIEND_LIST_ENDPOINT = "/get_friend_list"
+	GET_FRIEND_LIST_ENDPOINT      = "/get_friend_list"
+	SEND_PRIVATE_MESSAGE_ENDPOINT = "/send_private_msg"
 )
 
 type BaseResponse[T any] struct {
@@ -33,6 +35,10 @@ type FriendItem struct {
 	NickName string `json:"nickName"`
 	Remark   string `json:"remark"`
 	UserId   int64  `json:"user_id"`
+}
+
+type SendMessageResponse struct {
+	MessageId int64 `json:"message_id"`
 }
 
 func (g goCqHttp) genUrl(endpoint string) string {
@@ -50,4 +56,14 @@ func (g goCqHttp) ListFriends(ctx context.Context) ([]string, error) {
 		userIds = append(userIds, cast.ToString(item.UserId))
 	}
 	return userIds, nil
+}
+
+func (g goCqHttp) SendPrivateStringMessage(ctx context.Context, message, userId string) error {
+	client := util.GetRestClient[SendMessageResponse]()
+	_, err := client.PostJSON(ctx, g.genUrl(SEND_PRIVATE_MESSAGE_ENDPOINT), nil, map[string]interface{}{
+		"user_id":     cast.ToInt64(userId),
+		"message":     message,
+		"auto_escape": true,
+	})
+	return err
 }

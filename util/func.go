@@ -1,6 +1,9 @@
 package util
 
-import "time"
+import (
+	"math/rand"
+	"time"
+)
 
 var (
 	weekdayMap = map[time.Weekday]int{
@@ -11,6 +14,12 @@ var (
 		time.Friday:    5,
 		time.Saturday:  6,
 		time.Sunday:    7,
+	}
+
+	randomStringPool = []rune{
+		'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'G', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'g', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 	}
 )
 
@@ -57,4 +66,14 @@ func GetNextWeekday(t time.Time, weekday int) time.Time {
 		t = t.AddDate(0, 0, 1)
 	}
 	return t
+}
+
+func GenRandomString(length int) string {
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+	result := ""
+	for i := 0; i < length; i++ {
+		result += string(randomStringPool[r.Intn(len(randomStringPool))])
+	}
+	return result
 }

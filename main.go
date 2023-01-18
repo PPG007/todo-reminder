@@ -5,7 +5,6 @@ import (
 	"net/http"
 	_ "todo-reminder/conf"
 	"todo-reminder/controller"
-	"todo-reminder/cron"
 	"todo-reminder/middleware"
 )
 
@@ -34,6 +33,7 @@ func startGin() {
 func main() {
 	//go cron.Start()
 	//cron.RefreshHoliday()
-	//startGin()
-	cron.SyncUser()
+	startGin()
+	//cron.SyncUser()
+	//fmt.Println(util.GenRandomString(10))
 }
