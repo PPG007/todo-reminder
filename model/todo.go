@@ -110,3 +110,7 @@ func (t *Todo) Upsert(ctx context.Context) error {
 	}
 	return repository.Mongo.FindAndApply(ctx, C_TODO, condition, change, t)
 }
+
+func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId) error {
+	return nil
+}

@@ -12,11 +12,13 @@ func init() {
 		Endpoint: "/user/login",
 		Method:   http.MethodPost,
 		Handler:  Login,
+		NoAuth:   true,
 	})
 	registerApi(ReminderApi{
 		Endpoint: "/user/register",
 		Method:   http.MethodPost,
 		Handler:  Register,
+		NoAuth:   true,
 	})
 }
 

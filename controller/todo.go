@@ -10,14 +10,6 @@ import (
 	"todo-reminder/util"
 )
 
-type handler = func(c *gin.Context)
-
-type ReminderApi struct {
-	Endpoint string
-	Handler  handler
-	Method   string
-}
-
 func init() {
 	registerApi(ReminderApi{
 		Endpoint: "/todos/upsert",

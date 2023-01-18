@@ -52,6 +52,7 @@
     todoId: ObjectId,
     doneAt: DateTime,
     needRemind: Boolean,
+    userId: String,
 }
 ```
 

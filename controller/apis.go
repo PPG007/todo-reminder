@@ -1,5 +1,16 @@
 package controller
 
+import "github.com/gin-gonic/gin"
+
+type handler = func(c *gin.Context)
+
+type ReminderApi struct {
+	Endpoint string
+	Handler  handler
+	Method   string
+	NoAuth   bool
+}
+
 var (
 	APIs []ReminderApi
 
@@ -12,6 +23,9 @@ func init() {
 
 func registerApi(api ReminderApi) {
 	APIs = append(APIs, api)
+	if api.NoAuth {
+		registerNoAuthPath(api.Method, api.Endpoint)
+	}
 }
 
 func registerNoAuthPath(method, path string) {
