@@ -1,6 +1,9 @@
 package controller
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
 
 type handler = func(c *gin.Context)
 
@@ -9,6 +12,16 @@ type ReminderApi struct {
 	Handler  handler
 	Method   string
 	NoAuth   bool
+}
+
+type ErrorResponse struct {
+	Message interface{} `json:"message"`
+}
+
+func ReturnError(ctx *gin.Context, err error) {
+	ctx.AbortWithStatusJSON(http.StatusBadRequest, ErrorResponse{
+		Message: err.Error(),
+	})
 }
 
 var (

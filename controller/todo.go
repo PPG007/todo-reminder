@@ -67,7 +67,7 @@ func UpsertTodo(ctx *gin.Context) {
 	req := UpsertTodoRequest{}
 	err := ctx.ShouldBind(&req)
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	var (
@@ -76,7 +76,7 @@ func UpsertTodo(ctx *gin.Context) {
 	if req.NeedRemind {
 		remindAt, err = util.TransTimeStrToTime(req.RemindAt)
 		if err != nil {
-			ctx.Error(err)
+			ReturnError(ctx, err)
 			return
 		}
 	}
@@ -88,7 +88,7 @@ func UpsertTodo(ctx *gin.Context) {
 		model.REPEAT_TYPE_WORKING_DAY,
 		model.REPEAT_TYPE_HOLIDAY,
 	}) {
-		ctx.Error(errors.New("invalid repeat type"))
+		ReturnError(ctx, errors.New("invalid repeat type"))
 		return
 	}
 	todo := model.Todo{
@@ -108,14 +108,14 @@ func UpsertTodo(ctx *gin.Context) {
 		if bsoncodec.IsObjectIdHex(req.Id) {
 			todo.Id = bsoncodec.ObjectIdHex(req.Id)
 		} else {
-			ctx.Error(errors.New("invalid todo id"))
+			ReturnError(ctx, errors.New("invalid todo id"))
 		}
 	} else {
 		todo.Id = bsoncodec.NewObjectId()
 	}
 	err = todo.Upsert(ctx)
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})
@@ -124,12 +124,12 @@ func UpsertTodo(ctx *gin.Context) {
 func DeleteTodo(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if !bsoncodec.IsObjectIdHex(id) {
-		ctx.Error(errors.New("invalid todo id"))
+		ReturnError(ctx, errors.New("invalid todo id"))
 		return
 	}
 	err := model.CTodo.DeleteById(ctx, bsoncodec.ObjectIdHex(id))
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})

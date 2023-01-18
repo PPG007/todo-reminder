@@ -35,12 +35,12 @@ func init() {
 func DoneTodoRecord(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if !bsoncodec.IsObjectIdHex(id) {
-		ctx.Error(errors.New("invalid id"))
+		ReturnError(ctx, errors.New("invalid id"))
 		return
 	}
 	err := model.CTodoRecord.Done(ctx, bsoncodec.ObjectIdHex(id))
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})
@@ -49,7 +49,7 @@ func DoneTodoRecord(ctx *gin.Context) {
 func UndoTodoRecord(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if !bsoncodec.IsObjectIdHex(id) {
-		ctx.Error(errors.New("invalid id"))
+		ReturnError(ctx, errors.New("invalid id"))
 		return
 	}
 	model.CTodoRecord.Undo(ctx, bsoncodec.ObjectIdHex(id))
@@ -58,12 +58,12 @@ func UndoTodoRecord(ctx *gin.Context) {
 func DeleteOneRecord(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if !bsoncodec.IsObjectIdHex(id) {
-		ctx.Error(errors.New("invalid id"))
+		ReturnError(ctx, errors.New("invalid id"))
 		return
 	}
 	err := model.CTodoRecord.Delete(ctx, bsoncodec.ObjectIdHex(id))
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})
@@ -76,18 +76,18 @@ type DelayTodoRecordRequest struct {
 func DelayTodoRecord(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if !bsoncodec.IsObjectIdHex(id) {
-		ctx.Error(errors.New("invalid id"))
+		ReturnError(ctx, errors.New("invalid id"))
 		return
 	}
 	req := DelayTodoRecordRequest{}
 	err := ctx.ShouldBind(&req)
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	err = model.CTodoRecord.Delay(ctx, bsoncodec.ObjectIdHex(id), time.Second*time.Duration(req.Second))
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})

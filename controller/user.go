@@ -38,12 +38,12 @@ func Login(ctx *gin.Context) {
 	req := LoginRequest{}
 	err := ctx.ShouldBind(&req)
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	token, err := model.CUser.Login(ctx, req.UserId, req.Password)
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, token)
@@ -53,17 +53,17 @@ func Register(ctx *gin.Context) {
 	req := LoginRequest{}
 	err := ctx.ShouldBind(&req)
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	user, _ := model.CUser.GetByUserId(ctx, req.UserId)
 	if user.Id.Valid() {
-		ctx.Error(errors.New("user has already registered"))
+		ReturnError(ctx, errors.New("user has already registered"))
 		return
 	}
 	err = model.CUser.Create(ctx, req.UserId, req.Password)
 	if err != nil {
-		ctx.Error(err)
+		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})

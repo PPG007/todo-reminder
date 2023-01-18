@@ -9,7 +9,8 @@ import (
 )
 
 func startGin() {
-	e := gin.Default()
+	e := gin.New()
+	e.Use(middleware.Recovery)
 	e.Use(middleware.CheckToken)
 	for _, api := range controller.APIs {
 		switch api.Method {
@@ -31,6 +32,6 @@ func startGin() {
 
 func main() {
 	//go cron.Start()
-	//startGin()
 	//cron.RefreshHoliday()
+	startGin()
 }
