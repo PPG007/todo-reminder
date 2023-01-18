@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"github.com/qiniu/qmgo"
 	"time"
 	"todo-reminder/repository"
 	"todo-reminder/repository/bsoncodec"
@@ -16,17 +17,14 @@ var (
 )
 
 type Todo struct {
-	Id              bsoncodec.ObjectId `json:"id" bson:"_id"`
-	IsDeleted       bool               `json:"isDeleted" bson:"isDeleted"`
-	CreatedAt       time.Time          `json:"createdAt" bson:"createdAt"`
-	UpdatedAt       time.Time          `json:"updatedAt" bson:"updatedAt"`
-	HasBeenDone     bool               `json:"hasBeenDone" bson:"hasBeenDone"`
-	HasBeenReminded bool               `json:"hasBeenReminded" bson:"hasBeenReminded"`
-	NeedRemind      bool               `json:"needRemind" bson:"needRemind"`
-	Content         string             `json:"content" bson:"content"`
-	UserId          string             `json:"userId" bson:"userId"`
-	RemindSetting   RemindSetting      `json:"remindSetting" bson:"remindSetting"`
-	DoneAt          time.Time          `json:"doneAt,omitempty" bson:"doneAt,omitempty"`
+	Id            bsoncodec.ObjectId `json:"id" bson:"_id"`
+	IsDeleted     bool               `json:"isDeleted" bson:"isDeleted"`
+	CreatedAt     time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedAt     time.Time          `json:"updatedAt" bson:"updatedAt"`
+	NeedRemind    bool               `json:"needRemind" bson:"needRemind"`
+	Content       string             `json:"content" bson:"content"`
+	UserId        string             `json:"userId" bson:"userId"`
+	RemindSetting RemindSetting      `json:"remindSetting" bson:"remindSetting"`
 }
 
 func (t *Todo) Create(ctx context.Context) error {
@@ -34,6 +32,16 @@ func (t *Todo) Create(ctx context.Context) error {
 	t.CreatedAt = time.Now()
 	t.UpdatedAt = time.Now()
 	t.IsDeleted = false
+	record := TodoRecord{
+		HasBeenDone: false,
+		TodoId:      t.Id,
+		NeedRemind:  t.NeedRemind,
+		Content:     t.Content,
+	}
+	err := record.Create(ctx)
+	if err != nil {
+		return err
+	}
 	return repository.Mongo.Insert(ctx, C_TODO, t)
 }
 
@@ -56,22 +64,6 @@ func (*Todo) UpdateById(ctx context.Context, id bsoncodec.ObjectId, updater bson
 	return repository.Mongo.UpdateOne(ctx, C_TODO, condition, updater)
 }
 
-func (*Todo) Done(ctx context.Context, id bsoncodec.ObjectId) error {
-	condition := bsoncodec.M{
-		"_id":         id,
-		"isDeleted":   false,
-		"hasBeenDone": false,
-	}
-	updater := bsoncodec.M{
-		"$set": bsoncodec.M{
-			"hasBeenDone": true,
-			"doneAt":      time.Now(),
-			"updatedAt":   time.Now(),
-		},
-	}
-	return repository.Mongo.UpdateOne(ctx, C_TODO, condition, updater)
-}
-
 func (*Todo) DeleteById(ctx context.Context, id bsoncodec.ObjectId) error {
 	condition := bsoncodec.M{
 		"_id": id,
@@ -82,7 +74,11 @@ func (*Todo) DeleteById(ctx context.Context, id bsoncodec.ObjectId) error {
 			"updatedAt": time.Now(),
 		},
 	}
-	return repository.Mongo.UpdateOne(ctx, C_TODO, condition, updater)
+	err := repository.Mongo.UpdateOne(ctx, C_TODO, condition, updater)
+	if err != nil {
+		return err
+	}
+	return CTodoRecord.DeleteByTodoId(ctx, id)
 }
 
 func (*Todo) ListByCondition(ctx context.Context, condition bsoncodec.M) ([]Todo, error) {
@@ -91,44 +87,26 @@ func (*Todo) ListByCondition(ctx context.Context, condition bsoncodec.M) ([]Todo
 	return todos, err
 }
 
-func (*Todo) RollbackTodo(ctx context.Context, id bsoncodec.ObjectId) error {
+func (t *Todo) Upsert(ctx context.Context) error {
 	condition := bsoncodec.M{
-		"_id": id,
+		"_id": t.Id,
 	}
-	updater := bsoncodec.M{
-		"$set": bsoncodec.M{
-			"updatedAt":       time.Now(),
-			"hasBeenDone":     false,
-			"hasBeenReminded": false,
-		},
-		"$unset": bsoncodec.M{
-			"doneAt": "",
+	change := qmgo.Change{
+		Upsert:    true,
+		ReturnNew: true,
+		Update: bsoncodec.M{
+			"$set": bsoncodec.M{
+				"updatedAt":     time.Now(),
+				"needRemind":    t.NeedRemind,
+				"content":       t.Content,
+				"userId":        t.UserId,
+				"remindSetting": t.RemindSetting,
+			},
+			"$setOnInsert": bsoncodec.M{
+				"isDeleted": false,
+				"createdAt": time.Now(),
+			},
 		},
 	}
-	return repository.Mongo.UpdateOne(ctx, C_TODO, condition, updater)
-}
-
-func (t *Todo) Notify(ctx context.Context) {
-	err := t.UpdateById(ctx, t.Id, bsoncodec.M{
-		"$set": bsoncodec.M{
-			"hasBeenReminded": true,
-		},
-	})
-	if err != nil {
-		return
-	}
-	// TODO: notify user
-}
-
-func (t *Todo) RenewRemindAt(ctx context.Context) {
-	if t.RemindSetting.RepeatSetting.Type == REPEAT_TYPE_NONE {
-		return
-	}
-	nextRemindAt := t.RemindSetting.GetNextRemindAt()
-	t.UpdateById(ctx, t.Id, bsoncodec.M{
-		"$set": bsoncodec.M{
-			"remindSetting.remindAt": nextRemindAt,
-			"hasBeenReminded":        false,
-		},
-	})
+	return repository.Mongo.FindAndApply(ctx, C_TODO, condition, change, t)
 }
