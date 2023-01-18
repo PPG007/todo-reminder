@@ -5,3 +5,5 @@ token:
 mongodb:
   uri: "mongodb://localhost:27017"
   database: "todo"
+gocq:
+  uri: "http://localhost:5700"

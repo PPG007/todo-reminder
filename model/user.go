@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
 	mgo_option "go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
@@ -80,4 +81,24 @@ func (*User) GetByUserId(ctx context.Context, userId string) (User, error) {
 	user := User{}
 	err := repository.Mongo.FindOne(ctx, C_USER, condition, &user)
 	return user, err
+}
+
+func (u *User) UpsertWithoutPassword(ctx context.Context) error {
+	condition := bsoncodec.M{
+		"userId":    u.UserId,
+		"isDeleted": false,
+	}
+	change := qmgo.Change{
+		Upsert:    true,
+		ReturnNew: true,
+		Update: bsoncodec.M{
+			"$set": bsoncodec.M{
+				"updatedAt": time.Now(),
+			},
+			"$setOnInsert": bsoncodec.M{
+				"createdAt": time.Now(),
+			},
+		},
+	}
+	return repository.Mongo.FindAndApply(ctx, C_USER, condition, change, u)
 }
