@@ -31,9 +31,5 @@ func startGin() {
 }
 
 func main() {
-	//go cron.Start()
-	//cron.RefreshHoliday()
-	startGin()
-	//cron.SyncUser()
-	//fmt.Println(util.GenRandomString(10))
+
 }

@@ -21,8 +21,8 @@ type goCqHttp struct {
 }
 
 const (
-	GET_FRIEND_LIST_ENDPOINT      = "/get_friend_list"
-	SEND_PRIVATE_MESSAGE_ENDPOINT = "/send_private_msg"
+	GET_FRIEND_LIST_ENDPOINT      = "get_friend_list"
+	SEND_PRIVATE_MESSAGE_ENDPOINT = "send_private_msg"
 )
 
 type BaseResponse[T any] struct {
@@ -42,7 +42,7 @@ type SendMessageResponse struct {
 }
 
 func (g goCqHttp) genUrl(endpoint string) string {
-	return fmt.Sprintf("%s%s", viper.GetString("gocq.uri"), endpoint)
+	return fmt.Sprintf("%s/%s", viper.GetString("goCq.uri"), endpoint)
 }
 
 func (g goCqHttp) ListFriends(ctx context.Context) ([]string, error) {

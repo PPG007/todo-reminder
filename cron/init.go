@@ -7,16 +7,17 @@ var (
 )
 
 func init() {
-	//c = cron.New()
-	//_, err := c.AddFunc("@every 1m", remind)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//RefreshHoliday()
-	//_, err = c.AddFunc("@every 1d", RefreshHoliday)
-	//if err != nil {
-	//	panic(err)
-	//}
+	RefreshHoliday()
+	SyncUser()
+	c = cron.New()
+	_, err := c.AddFunc("@every 1m", remind)
+	if err != nil {
+		panic(err)
+	}
+	_, err = c.AddFunc("@weekly", RefreshHoliday)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func Start() {
