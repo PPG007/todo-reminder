@@ -13,10 +13,15 @@ func Remind() {
 		return
 	}
 	var succeedIds []bsoncodec.ObjectId
+	var succeedTodoIds []bsoncodec.ObjectId
 	for _, record := range records {
 		if err := record.Notify(ctx); err == nil {
 			succeedIds = append(succeedIds, record.Id)
+			succeedTodoIds = append(succeedTodoIds, record.TodoId)
 		}
 	}
 	model.CTodoRecord.MarkAsReminded(ctx, succeedIds)
+	for _, id := range succeedTodoIds {
+		model.CTodo.GenNextRecord(ctx, id)
+	}
 }
