@@ -6,6 +6,7 @@ import (
 	"github.com/qiniu/qmgo/options"
 	mgo_option "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
+	"todo-reminder/gocq"
 	"todo-reminder/repository"
 	"todo-reminder/repository/bsoncodec"
 	"todo-reminder/util"
@@ -29,17 +30,18 @@ func init() {
 }
 
 type TodoRecord struct {
-	Id          bsoncodec.ObjectId `bson:"_id"`
-	IsDeleted   bool               `bson:"isDeleted"`
-	CreatedAt   time.Time          `bson:"createdAt"`
-	UpdatedAt   time.Time          `bson:"updatedAt"`
-	RemindAt    time.Time          `bson:"remindAt,omitempty"`
-	HasBeenDone bool               `bson:"hasBeenDone"`
-	Content     string             `bson:"content"`
-	TodoId      bsoncodec.ObjectId `bson:"todoId"`
-	DoneAt      time.Time          `bson:"doneAt,omitempty"`
-	NeedRemind  bool               `bson:"needRemind"`
-	UserId      string             `bson:"userId"`
+	Id              bsoncodec.ObjectId `bson:"_id"`
+	IsDeleted       bool               `bson:"isDeleted"`
+	CreatedAt       time.Time          `bson:"createdAt"`
+	UpdatedAt       time.Time          `bson:"updatedAt"`
+	RemindAt        time.Time          `bson:"remindAt,omitempty"`
+	HasBeenDone     bool               `bson:"hasBeenDone"`
+	Content         string             `bson:"content"`
+	TodoId          bsoncodec.ObjectId `bson:"todoId"`
+	DoneAt          time.Time          `bson:"doneAt,omitempty"`
+	NeedRemind      bool               `bson:"needRemind"`
+	UserId          string             `bson:"userId"`
+	HasBeenReminded bool               `bson:"hasBeenReminded"`
 }
 
 func (t *TodoRecord) Create(ctx context.Context) error {
@@ -141,4 +143,41 @@ func (*TodoRecord) UpdateById(ctx context.Context, id bsoncodec.ObjectId, update
 		"_id": id,
 	}
 	return repository.Mongo.UpdateOne(ctx, C_TODO_RECORD, condition, updater)
+}
+
+func (*TodoRecord) ListNeedRemindOnes(ctx context.Context) ([]TodoRecord, error) {
+	condition := bsoncodec.M{
+		"isDeleted": false,
+		"remindAt": bsoncodec.M{
+			"$lte": time.Now(),
+		},
+		"needRemind":      true,
+		"hasBeenDone":     false,
+		"hasBeenReminded": false,
+	}
+	var records []TodoRecord
+	err := repository.Mongo.FindAll(ctx, C_TODO_RECORD, condition, &records)
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+func (*TodoRecord) MarkAsReminded(ctx context.Context, ids []bsoncodec.ObjectId) error {
+	condition := bsoncodec.M{
+		"_id": bsoncodec.M{
+			"$in": ids,
+		},
+	}
+	updater := bsoncodec.M{
+		"$set": bsoncodec.M{
+			"hasBeenReminded": true,
+		},
+	}
+	_, err := repository.Mongo.UpdateAll(ctx, C_TODO_RECORD, condition, updater)
+	return err
+}
+
+func (t *TodoRecord) Notify(ctx context.Context) error {
+	return gocq.GoCq.SendPrivateStringMessage(ctx, t.Content, t.UserId)
 }

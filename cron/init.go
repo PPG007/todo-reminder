@@ -10,7 +10,11 @@ func init() {
 	RefreshHoliday()
 	SyncUser()
 	c = cron.New()
-	_, err := c.AddFunc("@every 1m", remind)
+	_, err := c.AddFunc("@every 20s", Remind)
+	if err != nil {
+		panic(err)
+	}
+	_, err = c.AddFunc("@every 1m", SyncUser)
 	if err != nil {
 		panic(err)
 	}
