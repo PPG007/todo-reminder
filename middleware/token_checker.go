@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"todo-reminder/controller"
 	"todo-reminder/util"
 )
@@ -13,9 +12,9 @@ func CheckToken(ctx *gin.Context) {
 		return
 	}
 	tokenStr := ctx.GetHeader("x-access-token")
-	token, err := util.ParseToken(ctx, tokenStr)
+	token, err := util.ParseToken(tokenStr)
 	if err != nil {
-		ctx.AbortWithError(http.StatusBadRequest, err)
+		controller.ReturnError(ctx, err)
 		return
 	}
 	ctx.Set("userId", token.UserId)

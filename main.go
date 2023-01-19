@@ -25,6 +25,16 @@ func startGin() {
 			e.GET(api.Endpoint, api.Handler)
 		}
 	}
+	e.NoRoute(func(ctx *gin.Context) {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, map[string]string{
+			"message": "not found",
+		})
+	})
+	e.NoMethod(func(ctx *gin.Context) {
+		ctx.AbortWithStatusJSON(http.StatusMethodNotAllowed, map[string]string{
+			"message": "method not allowed",
+		})
+	})
 	err := e.Run("0.0.0.0:8080")
 	if err != nil {
 		panic(err)

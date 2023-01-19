@@ -7,8 +7,8 @@ var (
 )
 
 func init() {
-	RefreshHoliday()
-	SyncUser()
+	go RefreshHoliday()
+	go SyncUser()
 	c = cron.New()
 	_, err := c.AddFunc("@every 20s", Remind)
 	if err != nil {

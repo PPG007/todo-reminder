@@ -53,7 +53,9 @@ func Login(ctx *gin.Context) {
 		ReturnError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, token)
+	ctx.JSON(http.StatusOK, map[string]string{
+		"token": token,
+	})
 }
 
 type UpdatePasswordRequest struct {

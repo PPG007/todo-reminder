@@ -1,9 +1,10 @@
 package util
 
 import (
-	"context"
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"encoding/base64"
 	"errors"
 	"github.com/spf13/viper"
 	"time"
@@ -31,6 +32,34 @@ func init() {
 		panic("need token valid days")
 	}
 }
+func pkcs7Padding(data []byte, blockSize int) []byte {
+	//判断缺少几位长度。最少1，最多 blockSize
+	padding := blockSize - len(data)%blockSize
+	//补足位数。把切片[]byte{byte(padding)}复制padding个
+	padText := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(data, padText...)
+}
+
+func pkcs7UnPadding(data []byte) []byte {
+	length := len(data)
+	//获取填充的个数
+	unPadding := int(data[length-1])
+	return data[:(length - unPadding)]
+}
+
+func Encrypt(data []byte) []byte {
+	data = pkcs7Padding(data, encryptor.BlockSize())
+	encrypted := make([]byte, len(data))
+	cipher.NewCBCEncrypter(encryptor, []byte(viper.GetString("token.key"))[:encryptor.BlockSize()]).CryptBlocks(encrypted, data)
+	return encrypted
+}
+
+func Decrypt(data []byte) []byte {
+	decrypted := make([]byte, len(data))
+	cipher.NewCBCDecrypter(encryptor, []byte(viper.GetString("token.key"))[:encryptor.BlockSize()]).CryptBlocks(decrypted, data)
+	decrypted = pkcs7UnPadding(decrypted)
+	return decrypted
+}
 
 func GenerateToken(userId string) string {
 	token := Token{
@@ -38,19 +67,17 @@ func GenerateToken(userId string) string {
 		CreatedAt: time.Now(),
 		ExpiredAt: time.Now().AddDate(0, 0, days),
 	}
-	source := []byte(MarshalToJson(token))
-	out := make([]byte, 0, len(source))
-	encryptor.Encrypt(out, source)
-	return string(out)
+	return base64.StdEncoding.EncodeToString(Encrypt([]byte(MarshalToJson(token))))
 }
 
-func ParseToken(ctx context.Context, tokenStr string) (*Token, error) {
-	source := []byte(tokenStr)
-	out := make([]byte, 0, len(source))
-	encryptor.Decrypt(out, source)
-	token := MustUnmarshalFromJson[Token](string(out))
-	if time.Now().After(token.ExpiredAt) {
-		return nil, errors.New("invalid token")
+func ParseToken(tokenStr string) (*Token, error) {
+	data, err := base64.StdEncoding.DecodeString(tokenStr)
+	if err != nil {
+		return nil, err
 	}
-	return &token, nil
+	token := MustUnmarshalFromJson[Token](string(Decrypt(data)))
+	if token.CreatedAt.Unix() > 0 && token.ExpiredAt.After(time.Now()) {
+		return &token, nil
+	}
+	return nil, errors.New("invalid token")
 }

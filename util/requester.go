@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/parnurzeal/gorequest"
-	"log"
 	"net/url"
 )
 
@@ -43,8 +42,7 @@ func (g goRequester[T]) PostJSON(ctx context.Context, url string, headers map[st
 	}
 	result := new(T)
 	jsonBody := MarshalToJson(params)
-	_, body, errs := req.Post(url).Send(jsonBody).EndStruct(result)
-	log.Println(string(body))
+	_, _, errs := req.Post(url).Send(jsonBody).EndStruct(result)
 	if len(errs) > 0 {
 		return *result, errs[0]
 	}

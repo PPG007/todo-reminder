@@ -3,9 +3,7 @@ package gocq
 import (
 	"context"
 	"github.com/gorilla/websocket"
-	"github.com/spf13/cast"
 	"github.com/spf13/viper"
-	"todo-reminder/model"
 )
 
 var (
@@ -68,10 +66,10 @@ func (e *EventBody) Handle(ctx context.Context) {
 func (e *EventBody) HandleNoticeEvent(ctx context.Context) {
 	switch e.NoticeType {
 	case NOTICE_TYPE_FRIEND_ADD:
-		user := model.User{
-			UserId: cast.ToString(e.UserId),
-		}
-		user.UpsertWithoutPassword(ctx)
+		//user := model.User{
+		//	UserId: cast.ToString(e.UserId),
+		//}
+		//user.UpsertWithoutPassword(ctx)
 	}
 }
 

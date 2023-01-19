@@ -62,8 +62,19 @@ func (*User) Login(ctx context.Context, userId, password string) (string, error)
 		"isDeleted": false,
 		"userId":    userId,
 	}
+	change := qmgo.Change{
+		Update: bsoncodec.M{
+			"$set": bsoncodec.M{
+				"isEnabled": true,
+				"updatedAt": time.Now(),
+			},
+		},
+		ReturnNew: true,
+		Upsert:    false,
+	}
+	// TODO: FindAndApply
 	user := User{}
-	err := repository.Mongo.FindOne(ctx, C_USER, condition, &user)
+	err := repository.Mongo.FindAndApply(ctx, C_USER, condition, change, &user)
 	if err != nil {
 		return "", err
 	}
@@ -112,6 +123,7 @@ func (*User) UpdatePassword(ctx context.Context, userId, password string) error 
 	condition := bsoncodec.M{
 		"userId":    userId,
 		"isDeleted": false,
+		"isEnabled": true,
 	}
 	updater := bsoncodec.M{
 		"$set": bsoncodec.M{
