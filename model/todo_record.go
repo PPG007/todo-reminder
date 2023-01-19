@@ -3,9 +3,12 @@ package model
 import (
 	"context"
 	"github.com/qiniu/qmgo"
+	"github.com/qiniu/qmgo/options"
+	mgo_option "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 	"todo-reminder/repository"
 	"todo-reminder/repository/bsoncodec"
+	"todo-reminder/util"
 )
 
 const (
@@ -16,12 +19,21 @@ var (
 	CTodoRecord = &TodoRecord{}
 )
 
+func init() {
+	repository.Mongo.CreateIndex(context.Background(), C_TODO_RECORD, options.IndexModel{
+		Key: []string{"isDeleted", "remindAt", "hasBeenDone"},
+		IndexOptions: &mgo_option.IndexOptions{
+			Background: util.PtrValue[bool](true),
+		},
+	})
+}
+
 type TodoRecord struct {
 	Id          bsoncodec.ObjectId `bson:"_id"`
 	IsDeleted   bool               `bson:"isDeleted"`
 	CreatedAt   time.Time          `bson:"createdAt"`
 	UpdatedAt   time.Time          `bson:"updatedAt"`
-	RemindAt    time.Time          `bson:"remindAt"`
+	RemindAt    time.Time          `bson:"remindAt,omitempty"`
 	HasBeenDone bool               `bson:"hasBeenDone"`
 	Content     string             `bson:"content"`
 	TodoId      bsoncodec.ObjectId `bson:"todoId"`

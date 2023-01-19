@@ -2,10 +2,14 @@ package model
 
 import (
 	"context"
+	"errors"
 	"github.com/qiniu/qmgo"
+	"github.com/qiniu/qmgo/options"
+	mgo_option "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 	"todo-reminder/repository"
 	"todo-reminder/repository/bsoncodec"
+	"todo-reminder/util"
 )
 
 const (
@@ -15,6 +19,21 @@ const (
 var (
 	CTodo = &Todo{}
 )
+
+func init() {
+	repository.Mongo.CreateIndex(context.Background(), C_TODO, options.IndexModel{
+		Key: []string{"isDeleted", "userId"},
+		IndexOptions: &mgo_option.IndexOptions{
+			Background: util.PtrValue[bool](true),
+		},
+	})
+	repository.Mongo.CreateIndex(context.Background(), C_TODO, options.IndexModel{
+		Key: []string{"isDeleted", "needRemind", "remindSetting.isRepeatable"},
+		IndexOptions: &mgo_option.IndexOptions{
+			Background: util.PtrValue[bool](true),
+		},
+	})
+}
 
 type Todo struct {
 	Id            bsoncodec.ObjectId `json:"id" bson:"_id"`
@@ -32,17 +51,11 @@ func (t *Todo) Create(ctx context.Context) error {
 	t.CreatedAt = time.Now()
 	t.UpdatedAt = time.Now()
 	t.IsDeleted = false
-	record := TodoRecord{
-		HasBeenDone: false,
-		TodoId:      t.Id,
-		NeedRemind:  t.NeedRemind,
-		Content:     t.Content,
-	}
-	err := record.Create(ctx)
+	err := repository.Mongo.Insert(ctx, C_TODO, t)
 	if err != nil {
 		return err
 	}
-	return repository.Mongo.Insert(ctx, C_TODO, t)
+	return t.GenNextRecord(ctx, t.Id)
 }
 
 func (*Todo) Get(ctx context.Context, condition bsoncodec.M) (Todo, error) {
@@ -112,5 +125,35 @@ func (t *Todo) Upsert(ctx context.Context) error {
 }
 
 func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId) error {
-	return nil
+	condition := bsoncodec.M{
+		"_id": id,
+	}
+	t := Todo{}
+	err := repository.Mongo.FindOne(ctx, C_TODO, condition, &t)
+	if err != nil {
+		return err
+	}
+	r := TodoRecord{
+		UserId:     t.UserId,
+		NeedRemind: t.NeedRemind,
+		Content:    t.Content,
+		TodoId:     t.Id,
+	}
+	if t.NeedRemind {
+		remindAt := t.RemindSetting.GetNextRemindAt(ctx)
+		if remindAt.Unix() < 0 {
+			return errors.New("failed to gen remind at")
+		}
+		updater := bsoncodec.M{
+			"$set": bsoncodec.M{
+				"remindSetting": t.RemindSetting,
+			},
+		}
+		err = t.UpdateById(ctx, t.Id, updater)
+		if err != nil {
+			return err
+		}
+		r.RemindAt = remindAt
+	}
+	return r.Create(ctx)
 }

@@ -55,11 +55,13 @@ func (r *RemindSetting) GetNextRemindAt(ctx context.Context) time.Time {
 	if r.RepeatSetting.Type == REPEAT_TYPE_HOLIDAY {
 		temp := r.LastRemindAt
 		// 第一次提醒
-		if r.LastRemindAt.Unix() == 0 {
+		if r.LastRemindAt.Unix() < 0 {
 			temp = r.RemindAt
 			if now.After(r.RemindAt) {
 				temp = r.RemindAt.AddDate(0, 0, 1)
 			}
+		} else {
+			temp = temp.AddDate(0, 0, 1)
 		}
 		nextRemindAt, err := CChinaHoliday.GetNextHoliday(ctx, temp)
 		if err != nil {
@@ -70,11 +72,13 @@ func (r *RemindSetting) GetNextRemindAt(ctx context.Context) time.Time {
 	} else if r.RepeatSetting.Type == REPEAT_TYPE_WORKING_DAY {
 		temp := r.LastRemindAt
 		// 第一次提醒
-		if r.LastRemindAt.Unix() == 0 {
+		if r.LastRemindAt.Unix() < 0 {
 			temp = r.RemindAt
 			if now.After(r.RemindAt) {
 				temp = r.RemindAt.AddDate(0, 0, 1)
 			}
+		} else {
+			temp = temp.AddDate(0, 0, 1)
 		}
 		nextRemindAt, err := CChinaHoliday.GetNextWorkingDay(ctx, temp)
 		if err != nil {
@@ -85,7 +89,7 @@ func (r *RemindSetting) GetNextRemindAt(ctx context.Context) time.Time {
 	} else {
 		targetDate := r.LastRemindAt
 		// 从未提醒过
-		if r.LastRemindAt.Unix() == 0 {
+		if r.LastRemindAt.Unix() < 0 {
 			targetDate = r.RemindAt
 			if now.After(r.RemindAt) {
 				targetDate = r.RemindAt.AddDate(offset.year, offset.month, offset.week*7+offset.day)
