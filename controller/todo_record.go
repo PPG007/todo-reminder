@@ -7,6 +7,7 @@ import (
 	"time"
 	"todo-reminder/model"
 	"todo-reminder/repository/bsoncodec"
+	"todo-reminder/util"
 )
 
 func init() {
@@ -146,12 +147,12 @@ func ListTodoRecords(ctx *gin.Context) {
 
 func formatTodoRecordDetail(record model.TodoRecord) TodoRecordDetail {
 	return TodoRecordDetail{
-		Id:          "",
-		RemindAt:    "",
-		HasBeenDone: false,
-		Content:     "",
-		DoneAt:      "",
-		NeedRemind:  false,
+		Id:          record.Id.Hex(),
+		RemindAt:    util.TransTimeToRFC3339(record.RemindAt),
+		HasBeenDone: record.HasBeenDone,
+		Content:     record.Content,
+		DoneAt:      util.TransTimeToRFC3339(record.DoneAt),
+		NeedRemind:  record.NeedRemind,
 	}
 }
 
