@@ -27,6 +27,11 @@ func init() {
 		Method:   http.MethodPut,
 		Handler:  UpdatePassword,
 	})
+	registerApi(ReminderApi{
+		Endpoint: "/user/userId",
+		Method:   http.MethodGet,
+		Handler:  GetCurrentUserId,
+	})
 }
 
 type LoginRequest struct {
@@ -104,4 +109,10 @@ func GetDefaultPassword(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})
+}
+
+func GetCurrentUserId(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, map[string]string{
+		"userId": ctx.GetString("userId"),
+	})
 }
