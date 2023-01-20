@@ -43,7 +43,9 @@ type dbRepository interface {
 	Count(ctx context.Context, collection string, condition bson.M) (int64, error)
 	FindAndApply(ctx context.Context, collection string, condition bson.M, change qmgo.Change, result interface{}) error
 	CreateIndex(ctx context.Context, collection string, index options.IndexModel) error
+	FindAllWithSorter(ctx context.Context, collection string, sorter []string, condition bsoncodec.M, result interface{}) error
 	FindOneWithSorter(ctx context.Context, collection string, sorter []string, condition bsoncodec.M, result interface{}) error
+	FindAllWithPage(ctx context.Context, collection string, sorter []string, page, perPage int64, condition bsoncodec.M, result interface{}) error
 }
 
 type mongoRepository struct {
@@ -97,4 +99,12 @@ func (m mongoRepository) UpdateAll(ctx context.Context, collection string, condi
 		return 0, err
 	}
 	return result.ModifiedCount, nil
+}
+
+func (m mongoRepository) FindAllWithSorter(ctx context.Context, collection string, sorter []string, condition bsoncodec.M, result interface{}) error {
+	return m.client.Database.Collection(collection).Find(ctx, condition).Sort(sorter...).All(result)
+}
+
+func (m mongoRepository) FindAllWithPage(ctx context.Context, collection string, sorter []string, page, perPage int64, condition bsoncodec.M, result interface{}) error {
+	return m.client.Database.Collection(collection).Find(ctx, condition).Sort(sorter...).Skip((page - 1) * perPage).Limit(perPage).All(result)
 }

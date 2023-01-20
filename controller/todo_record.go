@@ -30,6 +30,11 @@ func init() {
 		Method:   http.MethodPost,
 		Handler:  DelayTodoRecord,
 	})
+	registerApi(ReminderApi{
+		Endpoint: "/todoRecords",
+		Method:   http.MethodGet,
+		Handler:  ListTodoRecords,
+	})
 }
 
 func DoneTodoRecord(ctx *gin.Context) {
@@ -91,4 +96,69 @@ func DelayTodoRecord(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})
+}
+
+type ListTodoRecordsRequest struct {
+	HasBeenDone   bool          `json:"hasBeenDone"`
+	ListCondition ListCondition `json:"listCondition"`
+}
+
+type ListCondition struct {
+	OrderBy []string `json:"orderBy"`
+	Page    int64    `json:"page"`
+	PerPage int64    `json:"perPage"`
+}
+
+type ListTodoRecordsResponse struct {
+	Items []TodoRecordDetail `json:"items,omitempty"`
+}
+type TodoRecordDetail struct {
+	Id          string `json:"id,omitempty"`
+	RemindAt    string `json:"remindAt,omitempty"`
+	HasBeenDone bool   `json:"hasBeenDone,omitempty"`
+	Content     string `json:"content,omitempty"`
+	DoneAt      string `json:"doneAt,omitempty"`
+	NeedRemind  bool   `json:"needRemind,omitempty"`
+}
+
+func ListTodoRecords(ctx *gin.Context) {
+	req := ListTodoRecordsRequest{}
+	err := ctx.ShouldBind(&req)
+	if err != nil {
+		ReturnError(ctx, err)
+		return
+	}
+	userId := ctx.GetString("userId")
+	condition := bsoncodec.M{
+		"isDeleted":   false,
+		"hasBeenDone": req.HasBeenDone,
+		"userId":      userId,
+	}
+	todoRecords, err := model.CTodoRecord.ListByCondition(ctx, condition, req.ListCondition.Page, req.ListCondition.PerPage, req.ListCondition.OrderBy)
+	if err != nil {
+		ReturnError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, ListTodoRecordsResponse{
+		Items: formatTodoRecordDetails(todoRecords),
+	})
+}
+
+func formatTodoRecordDetail(record model.TodoRecord) TodoRecordDetail {
+	return TodoRecordDetail{
+		Id:          "",
+		RemindAt:    "",
+		HasBeenDone: false,
+		Content:     "",
+		DoneAt:      "",
+		NeedRemind:  false,
+	}
+}
+
+func formatTodoRecordDetails(records []model.TodoRecord) []TodoRecordDetail {
+	details := make([]TodoRecordDetail, 0, len(records))
+	for _, record := range records {
+		details = append(details, formatTodoRecordDetail(record))
+	}
+	return details
 }
