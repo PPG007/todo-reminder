@@ -22,6 +22,6 @@ func Remind() {
 	}
 	model.CTodoRecord.MarkAsReminded(ctx, succeedIds)
 	for _, id := range succeedTodoIds {
-		model.CTodo.GenNextRecord(ctx, id)
+		model.CTodo.GenNextRecord(ctx, id, false)
 	}
 }

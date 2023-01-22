@@ -52,11 +52,11 @@ func TestGenTodoRecordWithDailyRepeat(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -77,11 +77,11 @@ func TestGenTodoRecordWithDailyRepeatEveryTwoDays(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -102,11 +102,11 @@ func TestGenTodoRecordWithDailyRepeatTimePassed(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -127,11 +127,11 @@ func TestGenTodoRecordWithDailyRepeatTimePassedEveryFiveDays(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -152,11 +152,11 @@ func TestGenTodoRecordWithWeeklyRepeat(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -177,11 +177,11 @@ func TestGenTodoRecordWithWeeklyRepeatEveryTwoWeeks(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -202,11 +202,11 @@ func TestGenTodoRecordWithWeeklyRepeatTimePassed(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -227,11 +227,11 @@ func TestGenTodoRecordWithWeeklyRepeatTimePassedEveryTwoWeeks(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -252,11 +252,11 @@ func TestGenTodoRecordWithMonthlyRepeat(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -277,11 +277,11 @@ func TestGenTodoRecordWithMonthlyRepeatEveryThreeMonths(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -302,11 +302,11 @@ func TestGenTodoRecordWithMonthlyRepeatTimePassed(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -327,11 +327,11 @@ func TestGenTodoRecordWithMonthlyRepeatTimePassedEveryFourMonths(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -352,11 +352,11 @@ func TestGenTodoRecordWithYearlyRepeat(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -377,11 +377,11 @@ func TestGenTodoRecordWithYearlyRepeatEveryTenYears(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -402,11 +402,11 @@ func TestGenTodoRecordWithYearlyRepeatTimePassed(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -427,11 +427,11 @@ func TestGenTodoRecordWithYearlyRepeatTimePassedEveryTenYears(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -451,11 +451,11 @@ func TestGenTodoRecordWithWorkingDayRepeat(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -475,11 +475,11 @@ func TestGenTodoRecordWithWorkingDayRepeatTimePassed(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -499,11 +499,11 @@ func TestGenTodoRecordWithHolidayRepeat(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }
 
@@ -523,10 +523,10 @@ func TestGenTodoRecordWithHolidayRepeatTimePassed(t *testing.T) {
 	}
 	err := td.Create(ctx)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
-	err = td.GenNextRecord(ctx, td.Id)
+	err = td.GenNextRecord(ctx, td.Id, false)
 	assert.NoError(t, err)
 }

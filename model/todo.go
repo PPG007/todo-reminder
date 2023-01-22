@@ -55,7 +55,7 @@ func (t *Todo) Create(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return t.GenNextRecord(ctx, t.Id)
+	return t.GenNextRecord(ctx, t.Id, true)
 }
 
 func (*Todo) Get(ctx context.Context, condition bsoncodec.M) (Todo, error) {
@@ -121,10 +121,19 @@ func (t *Todo) Upsert(ctx context.Context) error {
 			},
 		},
 	}
-	return repository.Mongo.FindAndApply(ctx, C_TODO, condition, change, t)
+
+	err := repository.Mongo.FindAndApply(ctx, C_TODO, condition, change, t)
+	if err != nil {
+		return err
+	}
+	go func() {
+		CTodoRecord.DeleteUnRemindedByTodoId(ctx, t.Id)
+		t.GenNextRecord(ctx, t.Id, true)
+	}()
+	return nil
 }
 
-func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId) error {
+func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId, isFirst bool) error {
 	condition := bsoncodec.M{
 		"_id": id,
 	}
@@ -133,11 +142,19 @@ func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId) error {
 	if err != nil {
 		return err
 	}
+	if (!t.NeedRemind || !t.RemindSetting.IsRepeatable) && !isFirst {
+		return nil
+	}
 	r := TodoRecord{
 		UserId:     t.UserId,
 		NeedRemind: t.NeedRemind,
 		Content:    t.Content,
 		TodoId:     t.Id,
+	}
+	if t.NeedRemind && t.RemindSetting.IsRepeatable {
+		r.IsRepeatable = true
+		r.RepeatType = t.RemindSetting.RepeatSetting.Type
+		r.RepeatDateOffset = t.RemindSetting.RepeatSetting.DateOffset
 	}
 	if t.NeedRemind {
 		remindAt := t.RemindSetting.GetNextRemindAt(ctx)
@@ -156,4 +173,15 @@ func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId) error {
 		r.RemindAt = remindAt
 	}
 	return r.Create(ctx)
+}
+
+func (*Todo) ListByIds(ctx context.Context, ids []bsoncodec.ObjectId) ([]Todo, error) {
+	condition := bsoncodec.M{
+		"_id": bsoncodec.M{
+			"$in": ids,
+		},
+	}
+	var todos []Todo
+	err := repository.Mongo.FindAll(ctx, C_TODO, condition, &todos)
+	return todos, err
 }

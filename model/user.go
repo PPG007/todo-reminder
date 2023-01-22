@@ -123,7 +123,6 @@ func (*User) UpdatePassword(ctx context.Context, userId, password string) error 
 	condition := bsoncodec.M{
 		"userId":    userId,
 		"isDeleted": false,
-		"isEnabled": true,
 	}
 	updater := bsoncodec.M{
 		"$set": bsoncodec.M{

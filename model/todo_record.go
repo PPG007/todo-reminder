@@ -30,18 +30,21 @@ func init() {
 }
 
 type TodoRecord struct {
-	Id              bsoncodec.ObjectId `bson:"_id"`
-	IsDeleted       bool               `bson:"isDeleted"`
-	CreatedAt       time.Time          `bson:"createdAt"`
-	UpdatedAt       time.Time          `bson:"updatedAt"`
-	RemindAt        time.Time          `bson:"remindAt,omitempty"`
-	HasBeenDone     bool               `bson:"hasBeenDone"`
-	Content         string             `bson:"content"`
-	TodoId          bsoncodec.ObjectId `bson:"todoId"`
-	DoneAt          time.Time          `bson:"doneAt,omitempty"`
-	NeedRemind      bool               `bson:"needRemind"`
-	UserId          string             `bson:"userId"`
-	HasBeenReminded bool               `bson:"hasBeenReminded"`
+	Id               bsoncodec.ObjectId `bson:"_id"`
+	IsDeleted        bool               `bson:"isDeleted"`
+	CreatedAt        time.Time          `bson:"createdAt"`
+	UpdatedAt        time.Time          `bson:"updatedAt"`
+	RemindAt         time.Time          `bson:"remindAt,omitempty"`
+	HasBeenDone      bool               `bson:"hasBeenDone"`
+	Content          string             `bson:"content"`
+	TodoId           bsoncodec.ObjectId `bson:"todoId"`
+	DoneAt           time.Time          `bson:"doneAt,omitempty"`
+	NeedRemind       bool               `bson:"needRemind"`
+	UserId           string             `bson:"userId"`
+	HasBeenReminded  bool               `bson:"hasBeenReminded"`
+	IsRepeatable     bool               `bson:"isRepeatable"`
+	RepeatType       string             `bson:"repeatType"`
+	RepeatDateOffset int                `bson:"repeatDateOffset"`
 }
 
 func (t *TodoRecord) Create(ctx context.Context) error {
@@ -87,7 +90,7 @@ func (*TodoRecord) Done(ctx context.Context, id bsoncodec.ObjectId) error {
 		return err
 	}
 	go func() {
-		CTodo.GenNextRecord(ctx, r.TodoId)
+		CTodo.GenNextRecord(ctx, r.TodoId, false)
 	}()
 	return nil
 }
@@ -98,7 +101,7 @@ func (*TodoRecord) Undo(ctx context.Context, id bsoncodec.ObjectId) error {
 	}
 	updater := bsoncodec.M{
 		"$set": bsoncodec.M{
-			"done": false,
+			"hasBeenDone": false,
 		},
 		"$unset": bsoncodec.M{
 			"doneAt": "",
@@ -186,4 +189,29 @@ func (*TodoRecord) ListByCondition(ctx context.Context, condition bsoncodec.M, p
 	var r []TodoRecord
 	err := repository.Mongo.FindAllWithPage(ctx, C_TODO_RECORD, orderBy, page, perPage, condition, &r)
 	return r, err
+}
+
+func (*TodoRecord) GetById(ctx context.Context, id bsoncodec.ObjectId) (TodoRecord, error) {
+	condition := bsoncodec.M{
+		"_id": id,
+	}
+	r := TodoRecord{}
+	err := repository.Mongo.FindOne(ctx, C_TODO_RECORD, condition, &r)
+	return r, err
+}
+
+func (*TodoRecord) DeleteUnRemindedByTodoId(ctx context.Context, todoId bsoncodec.ObjectId) error {
+	condition := bsoncodec.M{
+		"todoId":          todoId,
+		"hasBeenReminded": false,
+	}
+	updater := bsoncodec.M{
+		"$set": bsoncodec.M{
+			"isDeleted": true,
+		},
+	}
+	if _, err := repository.Mongo.UpdateAll(ctx, C_TODO_RECORD, condition, updater); err != nil && err != qmgo.ErrNoSuchDocuments {
+		return err
+	}
+	return nil
 }

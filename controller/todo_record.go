@@ -27,13 +27,18 @@ func init() {
 		Handler:  DeleteOneRecord,
 	})
 	registerApi(ReminderApi{
+		Endpoint: "/todoRecord/:id",
+		Method:   http.MethodGet,
+		Handler:  GetTodoRecordById,
+	})
+	registerApi(ReminderApi{
 		Endpoint: "/todoRecord/:id/delay",
 		Method:   http.MethodPost,
 		Handler:  DelayTodoRecord,
 	})
 	registerApi(ReminderApi{
-		Endpoint: "/todoRecords",
-		Method:   http.MethodGet,
+		Endpoint: "/todoRecords/search",
+		Method:   http.MethodPost,
 		Handler:  ListTodoRecords,
 	})
 }
@@ -111,15 +116,29 @@ type ListCondition struct {
 }
 
 type ListTodoRecordsResponse struct {
-	Items []TodoRecordDetail `json:"items,omitempty"`
+	Items []TodoRecordDetail `json:"items"`
 }
 type TodoRecordDetail struct {
-	Id          string `json:"id,omitempty"`
-	RemindAt    string `json:"remindAt,omitempty"`
-	HasBeenDone bool   `json:"hasBeenDone,omitempty"`
-	Content     string `json:"content,omitempty"`
-	DoneAt      string `json:"doneAt,omitempty"`
-	NeedRemind  bool   `json:"needRemind,omitempty"`
+	Id               string `json:"id"`
+	RemindAt         string `json:"remindAt"`
+	HasBeenDone      bool   `json:"hasBeenDone"`
+	Content          string `json:"content"`
+	DoneAt           string `json:"doneAt"`
+	NeedRemind       bool   `json:"needRemind"`
+	IsRepeatable     bool   `json:"isRepeatable"`
+	RepeatType       string `json:"repeatType"`
+	RepeatDateOffset int    `json:"repeatDateOffset"`
+	TodoId           string `json:"todoId"`
+}
+
+func formatListCondition(listCondition ListCondition) ListCondition {
+	if listCondition.Page == 0 {
+		listCondition.Page = 1
+	}
+	if listCondition.PerPage == 0 {
+		listCondition.PerPage = 100
+	}
+	return listCondition
 }
 
 func ListTodoRecords(ctx *gin.Context) {
@@ -135,6 +154,7 @@ func ListTodoRecords(ctx *gin.Context) {
 		"hasBeenDone": req.HasBeenDone,
 		"userId":      userId,
 	}
+	req.ListCondition = formatListCondition(req.ListCondition)
 	todoRecords, err := model.CTodoRecord.ListByCondition(ctx, condition, req.ListCondition.Page, req.ListCondition.PerPage, req.ListCondition.OrderBy)
 	if err != nil {
 		ReturnError(ctx, err)
@@ -145,14 +165,31 @@ func ListTodoRecords(ctx *gin.Context) {
 	})
 }
 
+func GetTodoRecordById(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if !bsoncodec.IsObjectIdHex(id) {
+		ReturnError(ctx, errors.New("invalid id"))
+		return
+	}
+	record, err := model.CTodoRecord.GetById(ctx, bsoncodec.ObjectIdHex(id))
+	if err != nil {
+		ReturnError(ctx, err)
+	}
+	ctx.JSON(http.StatusOK, formatTodoRecordDetail(record))
+}
+
 func formatTodoRecordDetail(record model.TodoRecord) TodoRecordDetail {
 	return TodoRecordDetail{
-		Id:          record.Id.Hex(),
-		RemindAt:    util.TransTimeToRFC3339(record.RemindAt),
-		HasBeenDone: record.HasBeenDone,
-		Content:     record.Content,
-		DoneAt:      util.TransTimeToRFC3339(record.DoneAt),
-		NeedRemind:  record.NeedRemind,
+		Id:               record.Id.Hex(),
+		RemindAt:         util.TransTimeToRFC3339(record.RemindAt),
+		HasBeenDone:      record.HasBeenDone,
+		Content:          record.Content,
+		DoneAt:           util.TransTimeToRFC3339(record.DoneAt),
+		NeedRemind:       record.NeedRemind,
+		IsRepeatable:     record.IsRepeatable,
+		RepeatType:       record.RepeatType,
+		RepeatDateOffset: record.RepeatDateOffset,
+		TodoId:           record.TodoId.Hex(),
 	}
 }
 

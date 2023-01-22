@@ -18,7 +18,7 @@ func init() {
 	})
 	registerApi(ReminderApi{
 		Endpoint: "/user/:userId/genPassword",
-		Method:   http.MethodPost,
+		Method:   http.MethodGet,
 		Handler:  GetDefaultPassword,
 		NoAuth:   true,
 	})
@@ -31,6 +31,12 @@ func init() {
 		Endpoint: "/user/userId",
 		Method:   http.MethodGet,
 		Handler:  GetCurrentUserId,
+	})
+	registerApi(ReminderApi{
+		Endpoint: "/user/validToken",
+		Method:   http.MethodPost,
+		Handler:  ValidToken,
+		NoAuth:   true,
 	})
 }
 
@@ -88,13 +94,9 @@ func UpdatePassword(ctx *gin.Context) {
 
 func GetDefaultPassword(ctx *gin.Context) {
 	userId := ctx.Param("userId")
-	user, err := model.CUser.GetByUserId(ctx, userId)
+	_, err := model.CUser.GetByUserId(ctx, userId)
 	if err != nil {
 		ReturnError(ctx, err)
-		return
-	}
-	if user.IsEnabled {
-		ReturnError(ctx, errors.New("invalid user"))
 		return
 	}
 	password := util.GenRandomString(10)
@@ -104,6 +106,16 @@ func GetDefaultPassword(ctx *gin.Context) {
 		return
 	}
 	err = gocq.GoCq.SendPrivateStringMessage(ctx, password, userId)
+	if err != nil {
+		ReturnError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, EmptyResponse{})
+}
+
+func ValidToken(ctx *gin.Context) {
+	tokenStr := ctx.GetHeader("x-access-token")
+	_, err := util.ParseToken(tokenStr)
 	if err != nil {
 		ReturnError(ctx, err)
 		return
