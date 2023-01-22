@@ -145,6 +145,13 @@ func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId, isFirst b
 	if (!t.NeedRemind || !t.RemindSetting.IsRepeatable) && !isFirst {
 		return nil
 	}
+	if total, err := CTodoRecord.CountNotDoneRecordsByTodoId(ctx, id); err == nil {
+		if total >= 1 {
+			return nil
+		}
+	} else {
+		return err
+	}
 	r := TodoRecord{
 		UserId:     t.UserId,
 		NeedRemind: t.NeedRemind,

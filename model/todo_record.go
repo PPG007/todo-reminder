@@ -57,8 +57,10 @@ func (t *TodoRecord) Create(ctx context.Context) error {
 
 func (*TodoRecord) DeleteByTodoId(ctx context.Context, todoId bsoncodec.ObjectId) error {
 	condition := bsoncodec.M{
-		"isDeleted": false,
-		"todoId":    todoId,
+		"isDeleted":       false,
+		"todoId":          todoId,
+		"hasBeenDone":     false,
+		"hasBeenReminded": false,
 	}
 	updater := bsoncodec.M{
 		"$set": bsoncodec.M{
@@ -204,6 +206,7 @@ func (*TodoRecord) DeleteUnRemindedByTodoId(ctx context.Context, todoId bsoncode
 	condition := bsoncodec.M{
 		"todoId":          todoId,
 		"hasBeenReminded": false,
+		"hasBeenDone":     false,
 	}
 	updater := bsoncodec.M{
 		"$set": bsoncodec.M{
@@ -214,4 +217,13 @@ func (*TodoRecord) DeleteUnRemindedByTodoId(ctx context.Context, todoId bsoncode
 		return err
 	}
 	return nil
+}
+
+func (*TodoRecord) CountNotDoneRecordsByTodoId(ctx context.Context, todoId bsoncodec.ObjectId) (int64, error) {
+	condition := bsoncodec.M{
+		"isDeleted":   false,
+		"todoId":      todoId,
+		"hasBeenDone": false,
+	}
+	return repository.Mongo.Count(ctx, C_TODO_RECORD, condition)
 }
