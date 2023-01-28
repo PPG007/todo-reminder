@@ -22,7 +22,19 @@ var (
 
 func init() {
 	repository.Mongo.CreateIndex(context.Background(), C_TODO_RECORD, options.IndexModel{
-		Key: []string{"isDeleted", "remindAt", "hasBeenDone"},
+		Key: []string{"isDeleted", "todoId", "hasBeenDone"},
+		IndexOptions: &mgo_option.IndexOptions{
+			Background: util.PtrValue[bool](true),
+		},
+	})
+	repository.Mongo.CreateIndex(context.Background(), C_TODO_RECORD, options.IndexModel{
+		Key: []string{"isDeleted", "hasBeenDone", "userId", "remindAt"},
+		IndexOptions: &mgo_option.IndexOptions{
+			Background: util.PtrValue[bool](true),
+		},
+	})
+	repository.Mongo.CreateIndex(context.Background(), C_TODO_RECORD, options.IndexModel{
+		Key: []string{"isDeleted", "remindAt", "needRemind", "hasBeenDone", "hasBeenReminded"},
 		IndexOptions: &mgo_option.IndexOptions{
 			Background: util.PtrValue[bool](true),
 		},
