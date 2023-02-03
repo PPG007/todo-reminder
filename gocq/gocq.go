@@ -14,6 +14,7 @@ type goCq interface {
 	SendPrivateStringMessage(ctx context.Context, message, userId string) error
 	SendGroupImageMessage(ctx context.Context, groupId string, fileName, filePath string) error
 	SendAtInGroup(ctx context.Context, groupId, userId string, message string) error
+	SendPrivateImageMessage(ctx context.Context, userId string, fileName, fileUrl string) error
 }
 
 type gocqEmpty struct {
@@ -46,6 +47,15 @@ func (g gocqEmpty) SendAtInGroup(ctx context.Context, groupId, userId string, me
 		"groupId": groupId,
 		"userId":  userId,
 		"message": message,
+	})
+	return nil
+}
+
+func (g gocqEmpty) SendPrivateImageMessage(ctx context.Context, userId string, fileName, fileUrl string) error {
+	log.Warn("Calling SendPrivateImageMessage", map[string]interface{}{
+		"userId":   userId,
+		"fileName": fileName,
+		"fileUrl":  fileUrl,
 	})
 	return nil
 }
@@ -123,6 +133,21 @@ func (g goCqHttp) SendAtInGroup(ctx context.Context, groupId, userId string, mes
 	_, err := client.PostJSON(ctx, g.genUrl(SEND_GROUP_MESSAGE_ENDPOINT), nil, map[string]interface{}{
 		"group_id": cast.ToInt64(groupId),
 		"message":  fmt.Sprintf("[CQ:at,qq=%s] %s", userId, message),
+	})
+	return err
+}
+
+func (g goCqHttp) SendPrivateImageMessage(ctx context.Context, userId string, fileName, fileUrl string) error {
+	client := util.GetRestClient[SendMessageResponse]()
+	_, err := client.PostJSON(ctx, g.genUrl(SEND_PRIVATE_MESSAGE_ENDPOINT), nil, map[string]interface{}{
+		"user_id": cast.ToInt64(userId),
+		"message": map[string]interface{}{
+			"type": "image",
+			"data": map[string]interface{}{
+				"url":  fileUrl,
+				"file": fileName,
+			},
+		},
 	})
 	return err
 }

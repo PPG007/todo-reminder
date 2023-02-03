@@ -57,6 +57,7 @@ type TodoRecord struct {
 	IsRepeatable     bool               `bson:"isRepeatable"`
 	RepeatType       string             `bson:"repeatType"`
 	RepeatDateOffset int                `bson:"repeatDateOffset"`
+	Images           []string           `bson:"images,omitempty"`
 }
 
 func (t *TodoRecord) Create(ctx context.Context) error {
@@ -196,7 +197,20 @@ func (*TodoRecord) MarkAsReminded(ctx context.Context, ids []bsoncodec.ObjectId)
 }
 
 func (t *TodoRecord) Notify(ctx context.Context) error {
-	return gocq.GetGocqInstance().SendPrivateStringMessage(ctx, t.Content, t.UserId)
+	err := gocq.GetGocqInstance().SendPrivateStringMessage(ctx, t.Content, t.UserId)
+	if err != nil {
+		return err
+	}
+	for _, image := range t.Images {
+		url, err := util.MinioClient.SignObjectUrl(ctx, image)
+		if err == nil {
+			err = gocq.GetGocqInstance().SendPrivateImageMessage(ctx, t.UserId, image, url)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (*TodoRecord) ListByPagination(ctx context.Context, condition bsoncodec.M, page, perPage int64, orderBy []string) (int64, []TodoRecord, error) {
