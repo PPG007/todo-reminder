@@ -15,6 +15,7 @@ var (
 type goCq interface {
 	ListFriends(ctx context.Context) ([]string, error)
 	SendPrivateStringMessage(ctx context.Context, message, userId string) error
+	SendPrivateImageMessage(ctx context.Context, message ImageMessage, userId string) error
 }
 
 type goCqHttp struct {
@@ -64,6 +65,23 @@ func (g goCqHttp) SendPrivateStringMessage(ctx context.Context, message, userId 
 		"user_id":     cast.ToInt64(userId),
 		"message":     message,
 		"auto_escape": true,
+	})
+	return err
+}
+
+type ImageMessage struct {
+	File string `json:"file"`
+	URL  string `json:"url"`
+}
+
+func (g goCqHttp) SendPrivateImageMessage(ctx context.Context, message ImageMessage, userId string) error {
+	client := util.GetRestClient[SendMessageResponse]()
+	_, err := client.PostJSON(ctx, g.genUrl(SEND_PRIVATE_MESSAGE_ENDPOINT), nil, map[string]interface{}{
+		"user_id": cast.ToInt64(userId),
+		"message": map[string]interface{}{
+			"type": "image",
+			"data": message,
+		},
 	})
 	return err
 }

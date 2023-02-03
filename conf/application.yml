@@ -8,3 +8,7 @@ mongodb:
 goCq:
   uri: "http://localhost:5700"
   websocketUri: "ws://localhost:8080/"
+minio:
+  bucket: todo
+  urlExpiredSeconds: 60
+  endpoint: "127.0.0.1:9000"

@@ -44,6 +44,7 @@ type Todo struct {
 	Content       string             `json:"content" bson:"content"`
 	UserId        string             `json:"userId" bson:"userId"`
 	RemindSetting RemindSetting      `json:"remindSetting" bson:"remindSetting"`
+	Image         string             `json:"image" bson:"image,omitempty"`
 }
 
 func (t *Todo) Create(ctx context.Context) error {

@@ -21,6 +21,11 @@ func init() {
 		Method:   http.MethodDelete,
 		Handler:  DeleteTodo,
 	})
+	registerApi(ReminderApi{
+		Endpoint: "/todos/uploadUrl",
+		Method:   http.MethodGet,
+		Handler:  GenUploadUrl,
+	})
 }
 
 type UpsertTodoRequest struct {
@@ -133,4 +138,16 @@ func DeleteTodo(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, EmptyResponse{})
+}
+
+func GenUploadUrl(ctx *gin.Context) {
+	fileName := ctx.Query("fileName")
+	url, err := util.MinioClient.GetPreSignPutObjectUrl(ctx, fileName)
+	if err != nil {
+		ReturnError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, map[string]string{
+		"url": url,
+	})
 }

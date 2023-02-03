@@ -49,6 +49,7 @@ type TodoRecord struct {
 	RemindAt         time.Time          `bson:"remindAt,omitempty"`
 	HasBeenDone      bool               `bson:"hasBeenDone"`
 	Content          string             `bson:"content"`
+	Image            string             `bson:"image,omitempty"`
 	TodoId           bsoncodec.ObjectId `bson:"todoId"`
 	DoneAt           time.Time          `bson:"doneAt,omitempty"`
 	NeedRemind       bool               `bson:"needRemind"`
@@ -196,7 +197,21 @@ func (*TodoRecord) MarkAsReminded(ctx context.Context, ids []bsoncodec.ObjectId)
 }
 
 func (t *TodoRecord) Notify(ctx context.Context) error {
-	return gocq.GoCq.SendPrivateStringMessage(ctx, t.Content, t.UserId)
+	err := gocq.GoCq.SendPrivateStringMessage(ctx, t.Content, t.UserId)
+	if err != nil {
+		return err
+	}
+	if t.Image != "" {
+		url, err := util.MinioClient.GetPreSignPutObjectUrl(ctx, t.Image)
+		if err != nil {
+			return err
+		}
+		return gocq.GoCq.SendPrivateImageMessage(ctx, gocq.ImageMessage{
+			File: t.Image,
+			URL:  url,
+		}, t.UserId)
+	}
+	return nil
 }
 
 func (*TodoRecord) ListByCondition(ctx context.Context, condition bsoncodec.M, page, perPage int64, orderBy []string) ([]TodoRecord, error) {
