@@ -127,7 +127,7 @@ func (t *Todo) Upsert(ctx context.Context) error {
 		return err
 	}
 	go func() {
-		CTodoRecord.DeleteUnRemindedByTodoId(ctx, t.Id)
+		CTodoRecord.DeleteUndoneOnesByTodoId(ctx, t.Id)
 		t.GenNextRecord(ctx, t.Id, true)
 	}()
 	return nil

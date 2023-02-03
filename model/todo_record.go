@@ -214,11 +214,10 @@ func (*TodoRecord) GetById(ctx context.Context, id bsoncodec.ObjectId) (TodoReco
 	return r, err
 }
 
-func (*TodoRecord) DeleteUnRemindedByTodoId(ctx context.Context, todoId bsoncodec.ObjectId) error {
+func (*TodoRecord) DeleteUndoneOnesByTodoId(ctx context.Context, todoId bsoncodec.ObjectId) error {
 	condition := bsoncodec.M{
-		"todoId":          todoId,
-		"hasBeenReminded": false,
-		"hasBeenDone":     false,
+		"todoId":      todoId,
+		"hasBeenDone": false,
 	}
 	updater := bsoncodec.M{
 		"$set": bsoncodec.M{
