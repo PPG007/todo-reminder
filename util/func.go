@@ -1,6 +1,8 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -76,4 +78,16 @@ func GenRandomString(length int) string {
 		result += string(randomStringPool[r.Intn(len(randomStringPool))])
 	}
 	return result
+}
+
+func GenFileURI(path string) string {
+	return fmt.Sprintf("file:///%s", path)
+}
+
+func CopyByJson(src, dst interface{}) error {
+	bytes, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(bytes, dst)
 }

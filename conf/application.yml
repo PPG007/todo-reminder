@@ -7,4 +7,5 @@ mongodb:
   database: "todo"
 goCq:
   uri: "http://localhost:5700"
-  websocketUri: "ws://localhost:8080/"
+  websocketUri: "ws://localhost:8080"
+  type: "http"
