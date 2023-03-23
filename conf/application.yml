@@ -8,4 +8,4 @@ mongodb:
 goCq:
   uri: "http://localhost:5700"
   websocketUri: "ws://localhost:8080"
-  type: "http"
+  type: "ws"

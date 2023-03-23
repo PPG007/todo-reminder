@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
+	"log"
 	"todo-reminder/repository/bsoncodec"
 	"todo-reminder/util"
 )
@@ -55,12 +56,12 @@ type WebsocketRequest struct {
 }
 
 type WebsocketActionResponse struct {
-	Status  string                 `json:"status"`
-	RetCode int64                  `json:"retCode"`
-	Message string                 `json:"msg"`
-	Wording string                 `json:"wording"`
-	Data    map[string]interface{} `json:"data"`
-	Echo    string                 `json:"echo"`
+	Status  string      `json:"status"`
+	RetCode int64       `json:"retCode"`
+	Message string      `json:"msg"`
+	Wording string      `json:"wording"`
+	Data    interface{} `json:"data"`
+	Echo    string      `json:"echo"`
 }
 
 type EventBody struct {
@@ -144,11 +145,13 @@ func (g goCqWebsocket) SendAtInGroup(ctx context.Context, groupId, userId string
 
 func (g goCqWebsocket) listenActionResponse(ctx context.Context) {
 	for {
+		log.Println("reading json")
 		resp := &WebsocketActionResponse{}
 		err := g.action.ReadJSON(resp)
 		if err != nil {
 			continue
 		}
+		log.Println("read json")
 		switch resp.Echo {
 		case GET_FRIEND_LIST_ENDPOINT:
 			var list []FriendItem
@@ -166,16 +169,4 @@ func (g goCqWebsocket) listenEventResponse(ctx context.Context) {
 }
 
 type WebsocketEventResponse struct {
-}
-
-func StartWebsocketClient(ctx context.Context) {
-	connection, _, err := websocket.DefaultDialer.DialContext(ctx, viper.GetString("goCq.websocketUri"), nil)
-	if err != nil {
-		panic(err)
-	}
-	conn = connection
-}
-
-func ShutdownWSConnection() {
-	conn.Close()
 }
