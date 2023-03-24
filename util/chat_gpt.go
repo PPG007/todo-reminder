@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"os"
@@ -16,34 +17,38 @@ var (
 )
 
 func init() {
-	conn, err := grpc.Dial("127.0.0.1:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if !viper.GetBool("chatgpt.enabled") {
+		return
+	}
+	conn, err := grpc.Dial(viper.GetString("chatgpt.url"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
 	client = proto.NewChatGPTServiceClient(conn)
 }
 
-func GetImageFile(ctx context.Context, text string) (string, error) {
+func GetImageFile(ctx context.Context, text string) (string, string, error) {
 	resp, err := client.GetImageResponse(ctx, &proto.String{
 		Value: text,
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	file, err := os.Create(fmt.Sprintf("%s.jpg", bsoncodec.NewObjectId().Hex()))
+	name := fmt.Sprintf("%s.jpg", bsoncodec.NewObjectId().Hex())
+	file, err := os.Create(name)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	_, err = file.Write(resp.Data)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	file.Close()
 	abs, err := filepath.Abs(file.Name())
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return abs, nil
+	return abs, name, nil
 }
 
 func GetTextResponse(ctx context.Context, input string) (string, error) {

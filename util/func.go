@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -90,4 +92,31 @@ func CopyByJson(src, dst interface{}) error {
 		return err
 	}
 	return json.Unmarshal(bytes, dst)
+}
+
+func IsCQCode(message string) bool {
+	compile := regexp.MustCompile(`\[CQ:(.*?)]`)
+	return len(compile.FindStringSubmatch(message)) >= 2
+}
+
+func GetCQCodeParams(rawMessage string) (map[string]string, string, string) {
+	strs := regexp.MustCompile(`\[CQ:(.*?)]`).FindStringSubmatch(rawMessage)
+	if len(strs) < 2 {
+		return nil, "", ""
+	}
+	paramPairs := strings.Split(strs[1], ",")
+	params := map[string]string{
+		"type": paramPairs[0],
+	}
+	for i, pair := range paramPairs {
+		if i == 0 {
+			continue
+		}
+		kv := strings.Split(pair, "=")
+		params[kv[0]] = strings.Join(kv[1:], "=")
+	}
+	index := strings.Index(rawMessage, strs[1])
+	prefix := rawMessage[0 : index-4]
+	suffix := rawMessage[index+len(strs[1])+1:]
+	return params, strings.TrimSpace(prefix), strings.TrimSpace(suffix)
 }

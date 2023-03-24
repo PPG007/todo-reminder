@@ -9,3 +9,6 @@ goCq:
   uri: "http://localhost:5700"
   websocketUri: "ws://localhost:8080"
   type: "ws"
+chatgpt:
+  enabled: true
+  url: "localhost:8082"

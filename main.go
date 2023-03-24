@@ -11,6 +11,7 @@ import (
 
 func startGin() {
 	e := gin.New()
+	gin.SetMode(gin.ReleaseMode)
 	e.Use(middleware.Recovery)
 	e.Use(middleware.CheckToken)
 	for _, api := range controller.APIs {
@@ -35,7 +36,7 @@ func startGin() {
 			"message": "method not allowed",
 		})
 	})
-	err := e.Run("0.0.0.0:8080")
+	err := e.Run("0.0.0.0:8081")
 	if err != nil {
 		panic(err)
 	}
