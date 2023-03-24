@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"testing"
@@ -38,4 +39,9 @@ func TestCQCheck(t *testing.T) {
 	assert.True(t, isCQCode)
 	isCQCode = util.IsCQCode(`”@”`)
 	assert.False(t, isCQCode)
+}
+
+func TestSendAlert(t *testing.T) {
+	err := util.SendEmail(context.Background(), viper.GetString("alert.receiver"), "警告", "测试")
+	assert.NoError(t, err)
 }

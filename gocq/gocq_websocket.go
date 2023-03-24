@@ -38,10 +38,11 @@ const (
 )
 
 type goCqWebsocket struct {
-	action     *websocket.Conn
-	event      *websocket.Conn
-	friendList chan []FriendItem
-	heartBeat  chan HeartBeatStatus
+	action        *websocket.Conn
+	event         *websocket.Conn
+	friendList    chan []FriendItem
+	heartBeat     chan HeartBeatStatus
+	lastAlertTime time.Time
 }
 
 func init() {
@@ -162,7 +163,10 @@ func (g *goCqWebsocket) HeartBeat(ctx context.Context) {
 			}
 		case <-ticker.C:
 			log.Warn("HeartBeat deadline exceeded", map[string]interface{}{})
-			// TODO: send alert
+			if time.Now().Sub(g.lastAlertTime) >= time.Hour {
+				util.SendEmail(ctx, viper.GetString("alert.receiver"), "Alert", "check gocq heart beat failed")
+				g.lastAlertTime = time.Now()
+			}
 		}
 	}
 }
