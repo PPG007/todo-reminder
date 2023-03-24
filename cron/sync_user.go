@@ -9,7 +9,7 @@ import (
 
 func SyncUser() {
 	ctx := context.Background()
-	userIds, err := gocq.GoCq.ListFriends(ctx)
+	userIds, err := gocq.GoCqWebsocket.ListFriends(ctx)
 	if err != nil {
 		return
 	}

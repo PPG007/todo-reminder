@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"net/http"
 	_ "todo-reminder/conf"
 	"todo-reminder/controller"
@@ -36,7 +38,11 @@ func startGin() {
 			"message": "method not allowed",
 		})
 	})
-	err := e.Run("0.0.0.0:8081")
+	port := viper.GetInt("gin.port")
+	if port == 0 {
+		port = 8080
+	}
+	err := e.Run(fmt.Sprintf("0.0.0.0:%d", port))
 	if err != nil {
 		panic(err)
 	}

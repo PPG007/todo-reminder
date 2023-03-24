@@ -105,7 +105,7 @@ func GetDefaultPassword(ctx *gin.Context) {
 		ReturnError(ctx, err)
 		return
 	}
-	err = gocq.GoCq.SendPrivateStringMessage(ctx, password, userId)
+	err = gocq.GoCqWebsocket.SendPrivateStringMessage(ctx, password, userId)
 	if err != nil {
 		ReturnError(ctx, err)
 		return
