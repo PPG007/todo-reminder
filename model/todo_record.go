@@ -196,7 +196,7 @@ func (*TodoRecord) MarkAsReminded(ctx context.Context, ids []bsoncodec.ObjectId)
 }
 
 func (t *TodoRecord) Notify(ctx context.Context) error {
-	return gocq.GoCq.SendPrivateStringMessage(ctx, t.Content, t.UserId)
+	return gocq.GoCqWebsocket.SendPrivateStringMessage(ctx, t.Content, t.UserId)
 }
 
 func (*TodoRecord) ListByCondition(ctx context.Context, condition bsoncodec.M, page, perPage int64, orderBy []string) ([]TodoRecord, error) {
