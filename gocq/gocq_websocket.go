@@ -8,8 +8,10 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"strings"
+	"sync"
 	"time"
 	"todo-reminder/log"
+	"todo-reminder/openai"
 	"todo-reminder/repository/bsoncodec"
 	"todo-reminder/util"
 )
@@ -38,11 +40,20 @@ const (
 )
 
 type goCqWebsocket struct {
-	action        *websocket.Conn
-	event         *websocket.Conn
-	friendList    chan []FriendItem
-	heartBeat     chan HeartBeatStatus
-	lastAlertTime time.Time
+	action              *websocket.Conn
+	event               *websocket.Conn
+	friendList          chan []FriendItem
+	self                LoginInfo
+	heartBeat           chan HeartBeatStatus
+	lastAlertTime       time.Time
+	conversations       map[int64][]Conversation
+	lastReceivedTimeMap map[int64]time.Time
+	lock                *sync.Mutex
+}
+
+type Conversation struct {
+	input    string
+	response string
 }
 
 func init() {
@@ -59,14 +70,18 @@ func init() {
 		panic(err)
 	}
 	g := &goCqWebsocket{
-		friendList: make(chan []FriendItem),
-		heartBeat:  make(chan HeartBeatStatus),
-		action:     action,
-		event:      event,
+		friendList:          make(chan []FriendItem),
+		heartBeat:           make(chan HeartBeatStatus),
+		action:              action,
+		event:               event,
+		conversations:       make(map[int64][]Conversation),
+		lastReceivedTimeMap: make(map[int64]time.Time),
+		lock:                &sync.Mutex{},
 	}
 	go g.listenEventResponse(context.Background())
 	go g.listenActionResponse(context.Background())
 	go g.HeartBeat(context.Background())
+	go g.InitSelfInfo(context.Background())
 	GoCqWebsocket = g
 }
 
@@ -121,8 +136,34 @@ type Sender struct {
 	Title    string `json:"title"`
 }
 
+type LoginInfo struct {
+	UserId int64 `json:"user_id"`
+}
+
 func (s *HeartBeatStatus) Check() bool {
 	return s.AppInitialized && s.AppEnabled && s.AppGood && s.Online
+}
+
+func (g *goCqWebsocket) HeartBeat(ctx context.Context) {
+	ticker := time.NewTicker(time.Second * 10)
+	for {
+		select {
+		case status := <-g.heartBeat:
+			if status.Check() {
+				ticker.Reset(time.Second * 10)
+			} else {
+				log.Warn("Check heart beat failed", map[string]interface{}{
+					"status": status,
+				})
+			}
+		case <-ticker.C:
+			log.Warn("HeartBeat deadline exceeded", map[string]interface{}{})
+			if time.Now().Sub(g.lastAlertTime) >= time.Hour {
+				util.SendEmail(ctx, viper.GetString("alert.receiver"), "Alert", "check gocq heart beat failed")
+				g.lastAlertTime = time.Now()
+			}
+		}
+	}
 }
 
 func (g *goCqWebsocket) ListFriends(ctx context.Context) ([]string, error) {
@@ -145,28 +186,6 @@ func (g *goCqWebsocket) ListFriends(ctx context.Context) ([]string, error) {
 			return result, nil
 		case <-timer.C:
 			return nil, errors.New("context deadline exceed")
-		}
-	}
-}
-
-func (g *goCqWebsocket) HeartBeat(ctx context.Context) {
-	ticker := time.NewTicker(time.Second * 10)
-	for {
-		select {
-		case status := <-g.heartBeat:
-			if status.Check() {
-				ticker.Reset(time.Second * 10)
-			} else {
-				log.Warn("Check heart beat failed", map[string]interface{}{
-					"status": status,
-				})
-			}
-		case <-ticker.C:
-			log.Warn("HeartBeat deadline exceeded", map[string]interface{}{})
-			if time.Now().Sub(g.lastAlertTime) >= time.Hour {
-				util.SendEmail(ctx, viper.GetString("alert.receiver"), "Alert", "check gocq heart beat failed")
-				g.lastAlertTime = time.Now()
-			}
 		}
 	}
 }
@@ -215,6 +234,14 @@ func (g *goCqWebsocket) SendAtInGroup(ctx context.Context, groupId, userId strin
 	return g.action.WriteJSON(req)
 }
 
+func (g *goCqWebsocket) InitSelfInfo(ctx context.Context) error {
+	req := WebsocketRequest{
+		Action: GET_LOGIN_INFO,
+		Echo:   GET_LOGIN_INFO,
+	}
+	return g.action.WriteJSON(req)
+}
+
 func (g *goCqWebsocket) listenActionResponse(ctx context.Context) {
 	for {
 		resp := &WebsocketActionResponse{}
@@ -230,6 +257,13 @@ func (g *goCqWebsocket) listenActionResponse(ctx context.Context) {
 				continue
 			}
 			g.friendList <- list
+		case GET_LOGIN_INFO:
+			loginInfo := LoginInfo{}
+			err := util.CopyByJson(resp.Data, &loginInfo)
+			if err != nil {
+				continue
+			}
+			g.self = loginInfo
 		}
 	}
 }
@@ -275,13 +309,16 @@ func (e *EventBody) handleEvent(ctx context.Context, ws *goCqWebsocket) error {
 func (e *EventBody) handleMessageEvent(ctx context.Context, ws *goCqWebsocket) error {
 	switch e.MessageType {
 	case MESSAGE_TYPE_PRIVATE:
-
+		return nil
 	case MESSAGE_TYPE_GROUP:
 		if !util.IsCQCode(e.RawMessage) {
 			return nil
 		}
 		params, prefix, suffix := util.GetCQCodeParams(e.RawMessage)
 		if params["type"] != "at" {
+			return nil
+		}
+		if cast.ToInt64(params["qq"]) != ws.self.UserId {
 			return nil
 		}
 		content := prefix
@@ -292,22 +329,41 @@ func (e *EventBody) handleMessageEvent(ctx context.Context, ws *goCqWebsocket) e
 			return nil
 		}
 		if strings.Contains(content, "图片") {
-			absPath, name, rpcErr := util.GetImageFile(ctx, content)
-			if rpcErr != nil {
-				return ws.SendAtInGroup(ctx, cast.ToString(e.GroupId), cast.ToString(e.UserId), rpcErr.Error())
+			absPath, fileName, err := openai.GenImage(ctx, strings.Join(strings.Split(content, "图片"), ""))
+			if err != nil {
+				return ws.SendAtInGroup(ctx, cast.ToString(e.GroupId), cast.ToString(e.UserId), err.Error())
 			}
-			return ws.SendGroupImageMessage(ctx, cast.ToString(e.GroupId), name, absPath)
+			return ws.SendGroupImageMessage(ctx, cast.ToString(e.GroupId), fileName, absPath)
 		} else {
-			message, err := util.GetTextResponse(ctx, content)
+			ws.lock.Lock()
+			lastReceivedTime := ws.lastReceivedTimeMap[e.UserId]
+			if time.Now().Sub(lastReceivedTime) > time.Hour {
+				delete(ws.conversations, e.UserId)
+			}
+			ws.lastReceivedTimeMap[e.UserId] = time.Now()
+			ws.lock.Unlock()
+			conversations := ws.conversations[e.UserId]
+			inputs, receivedMessages := transConversationsToSlice(conversations)
+			message, err := openai.GetResponseWithContext(ctx, content, inputs, receivedMessages)
 			if err != nil {
 				message = err.Error()
+				ws.lock.Lock()
+				delete(ws.conversations, e.UserId)
+				ws.lock.Unlock()
+			} else {
+				conversations = append(conversations, Conversation{
+					input:    content,
+					response: message,
+				})
+				ws.lock.Lock()
+				ws.conversations[e.UserId] = conversations
+				ws.lock.Unlock()
 			}
 			return ws.SendAtInGroup(ctx, cast.ToString(e.GroupId), cast.ToString(e.UserId), message)
 		}
 	default:
 		return errors.New("unsupported message type")
 	}
-	return nil
 }
 
 func (e *EventBody) handleMessageSentEvent(ctx context.Context, ws *goCqWebsocket) error {
@@ -331,5 +387,11 @@ func (e *EventBody) handleMetaInfoEvent(ctx context.Context, ws *goCqWebsocket) 
 	return nil
 }
 
-type WebsocketEventResponse struct {
+func transConversationsToSlice(conversations []Conversation) ([]string, []string) {
+	s1, s2 := make([]string, 0, len(conversations)), make([]string, 0, len(conversations))
+	for _, conversation := range conversations {
+		s1 = append(s1, conversation.input)
+		s2 = append(s2, conversation.response)
+	}
+	return s1, s2
 }

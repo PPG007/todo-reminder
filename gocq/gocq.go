@@ -26,6 +26,7 @@ const (
 	GET_FRIEND_LIST_ENDPOINT      = "get_friend_list"
 	SEND_PRIVATE_MESSAGE_ENDPOINT = "send_private_msg"
 	SEND_GROUP_MESSAGE_ENDPOINT   = "send_group_msg"
+	GET_LOGIN_INFO                = "get_login_info"
 )
 
 type BaseResponse[T any] struct {

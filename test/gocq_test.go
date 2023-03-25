@@ -45,3 +45,16 @@ func TestSendAlert(t *testing.T) {
 	err := util.SendEmail(context.Background(), viper.GetString("alert.receiver"), "警告", "测试")
 	assert.NoError(t, err)
 }
+
+func TestGetCQParams(t *testing.T) {
+	code := `[CQ:at,qq=201632404] 看看[CQ:image,file=a74cbdbabb22f7fe953f7253be925438.image,subType=0,url=https://gchat.qpic.cn/gchatpic_new/1658272229/3974122864-2715504778-A74CBDBABB22F7FE953F7253BE925438/0?term=2\u0026amp;is_origin=0]`
+	assert.True(t, util.IsCQCode(code))
+	params, plainText := util.GetAllCQParams(code)
+	log.Println(plainText)
+	for _, param := range params {
+		for k, v := range param {
+			log.Println(k, v)
+		}
+		log.Println("====================")
+	}
+}

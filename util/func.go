@@ -1,9 +1,13 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/parnurzeal/gorequest"
 	"math/rand"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -119,4 +123,33 @@ func GetCQCodeParams(rawMessage string) (map[string]string, string, string) {
 	prefix := rawMessage[0 : index-4]
 	suffix := rawMessage[index+len(strs[1])+1:]
 	return params, strings.TrimSpace(prefix), strings.TrimSpace(suffix)
+}
+
+func DownloadImage(ctx context.Context, url, proxy string) ([]byte, error) {
+	req := gorequest.New()
+	resp, bytes, errs := req.Proxy(proxy).Get(url).EndBytes()
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("unknown error")
+	}
+	return bytes, nil
+}
+
+func GetAllCQParams(rawMessage string) ([]map[string]string, string) {
+	var (
+		result    []map[string]string
+		plainText string
+	)
+	for IsCQCode(rawMessage) {
+		params, prefix, suffix := GetCQCodeParams(rawMessage)
+		rawMessage = suffix
+		result = append(result, params)
+		plainText = suffix
+		if plainText == "" {
+			plainText = prefix
+		}
+	}
+	return result, plainText
 }
