@@ -14,8 +14,7 @@ import (
 func startGin() {
 	e := gin.New()
 	gin.SetMode(gin.ReleaseMode)
-	e.Use(middleware.Recovery)
-	e.Use(middleware.CheckToken)
+	middleware.Init(e)
 	for _, api := range controller.APIs {
 		switch api.Method {
 		case http.MethodPost:

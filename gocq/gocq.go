@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
+	"todo-reminder/log"
 	"todo-reminder/util"
-)
-
-var (
-	GoCq goCq = &goCqHttp{}
 )
 
 type goCq interface {
@@ -17,6 +14,40 @@ type goCq interface {
 	SendPrivateStringMessage(ctx context.Context, message, userId string) error
 	SendGroupImageMessage(ctx context.Context, groupId string, fileName, filePath string) error
 	SendAtInGroup(ctx context.Context, groupId, userId string, message string) error
+}
+
+type gocqEmpty struct {
+}
+
+func (g gocqEmpty) ListFriends(ctx context.Context) ([]string, error) {
+	log.Warn("Calling ListFriends", nil)
+	return nil, nil
+}
+
+func (g gocqEmpty) SendPrivateStringMessage(ctx context.Context, message, userId string) error {
+	log.Warn("Calling SendPrivateStringMessage", map[string]interface{}{
+		"message": message,
+		"userId":  userId,
+	})
+	return nil
+}
+
+func (g gocqEmpty) SendGroupImageMessage(ctx context.Context, groupId string, fileName, filePath string) error {
+	log.Warn("Calling SendGroupImageMessage", map[string]interface{}{
+		"groupId":  groupId,
+		"fileName": fileName,
+		"filePath": filePath,
+	})
+	return nil
+}
+
+func (g gocqEmpty) SendAtInGroup(ctx context.Context, groupId, userId string, message string) error {
+	log.Warn("Calling SendGroupImageMessage", map[string]interface{}{
+		"groupId": groupId,
+		"userId":  userId,
+		"message": message,
+	})
+	return nil
 }
 
 type goCqHttp struct {

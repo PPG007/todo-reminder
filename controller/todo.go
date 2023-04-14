@@ -94,7 +94,7 @@ func UpsertTodo(ctx *gin.Context) {
 	todo := model.Todo{
 		NeedRemind: req.NeedRemind,
 		Content:    req.Content,
-		UserId:     ctx.GetString("userId"),
+		UserId:     util.ExtractUserId(ctx),
 		RemindSetting: model.RemindSetting{
 			RemindAt:     remindAt,
 			IsRepeatable: req.IsRepeatable,

@@ -9,7 +9,11 @@ import (
 	"todo-reminder/log"
 )
 
-func Recovery(ctx *gin.Context) {
+func init() {
+	registerMiddleware(recovery, 0)
+}
+
+func recovery(ctx *gin.Context) {
 	defer func() {
 		if err := recover(); err != nil {
 			stack := make([]byte, 4096)
