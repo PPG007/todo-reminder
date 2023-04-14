@@ -11,12 +11,13 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"todo-reminder/log"
 	"todo-reminder/repository/bsoncodec"
 	"todo-reminder/util"
 )
 
 var (
-	client *openai.Client
+	client *openAIClient
 )
 
 func init() {
@@ -34,11 +35,64 @@ func init() {
 		},
 		Timeout: time.Minute,
 	}
-	client = openai.NewClientWithConfig(config)
+	client = &openAIClient{
+		client: openai.NewClientWithConfig(config),
+	}
 }
 
-func ChatCompletion(ctx context.Context, input string) (string, error) {
-	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+func GetOpenAIClient() OpenAI {
+	if viper.GetBool("chatgpt.enabled") {
+		return client
+	}
+	return openAIEmpty{}
+}
+
+type OpenAI interface {
+	ChatCompletion(ctx context.Context, input string) (string, error)
+	GenImage(ctx context.Context, input string) (string, string, error)
+	GenImageVariation(ctx context.Context, imagePath string) (string, error)
+	GetResponseWithContext(ctx context.Context, input string, inputs, receivedMessages []string) (string, error)
+}
+
+type openAIEmpty struct {
+}
+
+func (o openAIEmpty) ChatCompletion(ctx context.Context, input string) (string, error) {
+	log.Warn("Calling ChatCompletion", map[string]interface{}{
+		"input": input,
+	})
+	return "", nil
+}
+
+func (o openAIEmpty) GenImage(ctx context.Context, input string) (string, string, error) {
+	log.Warn("Calling GenImage", map[string]interface{}{
+		"input": input,
+	})
+	return "", "", nil
+}
+
+func (o openAIEmpty) GenImageVariation(ctx context.Context, imagePath string) (string, error) {
+	log.Warn("Calling GenImageVariation", map[string]interface{}{
+		"imagePath": imagePath,
+	})
+	return "", nil
+}
+
+func (o openAIEmpty) GetResponseWithContext(ctx context.Context, input string, inputs, receivedMessages []string) (string, error) {
+	log.Warn("Calling GetResponseWithContext", map[string]interface{}{
+		"input":            input,
+		"inputs":           inputs,
+		"receivedMessages": receivedMessages,
+	})
+	return "", nil
+}
+
+type openAIClient struct {
+	client *openai.Client
+}
+
+func (c *openAIClient) ChatCompletion(ctx context.Context, input string) (string, error) {
+	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT3Dot5Turbo,
 		Messages: []openai.ChatCompletionMessage{
 			{
@@ -53,8 +107,8 @@ func ChatCompletion(ctx context.Context, input string) (string, error) {
 	return resp.Choices[0].Message.Content, nil
 }
 
-func GenImage(ctx context.Context, input string) (string, string, error) {
-	resp, err := client.CreateImage(ctx, openai.ImageRequest{
+func (c *openAIClient) GenImage(ctx context.Context, input string) (string, string, error) {
+	resp, err := c.client.CreateImage(ctx, openai.ImageRequest{
 		Prompt:         input,
 		N:              1,
 		Size:           openai.CreateImageSize512x512,
@@ -81,13 +135,13 @@ func GenImage(ctx context.Context, input string) (string, string, error) {
 	return abs, fileName, err
 }
 
-func GenImageVariation(ctx context.Context, imagePath string) (string, error) {
+func (c *openAIClient) GenImageVariation(ctx context.Context, imagePath string) (string, error) {
 	file, err := os.Open(imagePath)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
-	resp, err := client.CreateVariImage(ctx, openai.ImageVariRequest{
+	resp, err := c.client.CreateVariImage(ctx, openai.ImageVariRequest{
 		N:     1,
 		Size:  openai.CreateImageSize512x512,
 		Image: file,
@@ -112,7 +166,7 @@ func GenImageVariation(ctx context.Context, imagePath string) (string, error) {
 	return filepath.Abs(file.Name())
 }
 
-func GetResponseWithContext(ctx context.Context, input string, inputs, receivedMessages []string) (string, error) {
+func (c *openAIClient) GetResponseWithContext(ctx context.Context, input string, inputs, receivedMessages []string) (string, error) {
 	messages := make([]openai.ChatCompletionMessage, 0, len(receivedMessages)+len(inputs)+1)
 	for i, _ := range inputs {
 		if i >= len(receivedMessages) {
@@ -131,7 +185,7 @@ func GetResponseWithContext(ctx context.Context, input string, inputs, receivedM
 		Role:    openai.ChatMessageRoleUser,
 		Content: input,
 	})
-	resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model:    openai.GPT3Dot5Turbo,
 		Messages: messages,
 	})

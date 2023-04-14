@@ -74,7 +74,7 @@ type UpdatePasswordRequest struct {
 }
 
 func UpdatePassword(ctx *gin.Context) {
-	userId := ctx.GetString("userId")
+	userId := util.ExtractUserId(ctx)
 	req := UpdatePasswordRequest{}
 	if err := ctx.ShouldBind(&req); err != nil {
 		ReturnError(ctx, err)
@@ -105,7 +105,7 @@ func GetDefaultPassword(ctx *gin.Context) {
 		ReturnError(ctx, err)
 		return
 	}
-	err = gocq.GoCqWebsocket.SendPrivateStringMessage(ctx, password, userId)
+	err = gocq.GetGocqInstance().SendPrivateStringMessage(ctx, password, userId)
 	if err != nil {
 		ReturnError(ctx, err)
 		return
@@ -125,6 +125,6 @@ func ValidToken(ctx *gin.Context) {
 
 func GetCurrentUserId(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, map[string]string{
-		"userId": ctx.GetString("userId"),
+		"userId": util.ExtractUserId(ctx),
 	})
 }

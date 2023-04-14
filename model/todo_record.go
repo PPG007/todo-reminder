@@ -196,13 +196,13 @@ func (*TodoRecord) MarkAsReminded(ctx context.Context, ids []bsoncodec.ObjectId)
 }
 
 func (t *TodoRecord) Notify(ctx context.Context) error {
-	return gocq.GoCqWebsocket.SendPrivateStringMessage(ctx, t.Content, t.UserId)
+	return gocq.GetGocqInstance().SendPrivateStringMessage(ctx, t.Content, t.UserId)
 }
 
-func (*TodoRecord) ListByCondition(ctx context.Context, condition bsoncodec.M, page, perPage int64, orderBy []string) ([]TodoRecord, error) {
+func (*TodoRecord) ListByPagination(ctx context.Context, condition bsoncodec.M, page, perPage int64, orderBy []string) (int64, []TodoRecord, error) {
 	var r []TodoRecord
-	err := repository.Mongo.FindAllWithPage(ctx, C_TODO_RECORD, orderBy, page, perPage, condition, &r)
-	return r, err
+	total, err := repository.Mongo.FindAllWithPage(ctx, C_TODO_RECORD, orderBy, page, perPage, condition, &r)
+	return total, r, err
 }
 
 func (*TodoRecord) GetById(ctx context.Context, id bsoncodec.ObjectId) (TodoRecord, error) {

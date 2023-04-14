@@ -117,6 +117,7 @@ type ListCondition struct {
 
 type ListTodoRecordsResponse struct {
 	Items []TodoRecordDetail `json:"items"`
+	Total int64              `json:"total"`
 }
 type TodoRecordDetail struct {
 	Id               string `json:"id"`
@@ -148,7 +149,7 @@ func ListTodoRecords(ctx *gin.Context) {
 		ReturnError(ctx, err)
 		return
 	}
-	userId := ctx.GetString("userId")
+	userId := util.ExtractUserId(ctx)
 	condition := bsoncodec.M{
 		"isDeleted":   false,
 		"hasBeenDone": req.HasBeenDone,
@@ -159,13 +160,14 @@ func ListTodoRecords(ctx *gin.Context) {
 	if !req.HasBeenDone {
 		req.ListCondition.OrderBy = []string{"remindAt"}
 	}
-	todoRecords, err := model.CTodoRecord.ListByCondition(ctx, condition, req.ListCondition.Page, req.ListCondition.PerPage, req.ListCondition.OrderBy)
+	total, todoRecords, err := model.CTodoRecord.ListByPagination(ctx, condition, req.ListCondition.Page, req.ListCondition.PerPage, req.ListCondition.OrderBy)
 	if err != nil {
 		ReturnError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, ListTodoRecordsResponse{
 		Items: formatTodoRecordDetails(todoRecords),
+		Total: total,
 	})
 }
 

@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/parnurzeal/gorequest"
 	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+	"todo-reminder/constant"
 )
 
 var (
@@ -152,4 +154,18 @@ func GetAllCQParams(rawMessage string) ([]map[string]string, string) {
 		}
 	}
 	return result, plainText
+}
+
+func ExtractRequestId(ctx context.Context) string {
+	if ginCtx, ok := ctx.(*gin.Context); ok {
+		return ginCtx.GetHeader(constant.HEADER_REQUEST_ID)
+	}
+	return ""
+}
+
+func ExtractUserId(ctx context.Context) string {
+	if ginCtx, ok := ctx.(*gin.Context); ok {
+		return ginCtx.GetString(constant.GIN_KEY_USER_ID)
+	}
+	return ""
 }

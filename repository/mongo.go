@@ -45,7 +45,7 @@ type dbRepository interface {
 	CreateIndex(ctx context.Context, collection string, index options.IndexModel) error
 	FindAllWithSorter(ctx context.Context, collection string, sorter []string, condition bsoncodec.M, result interface{}) error
 	FindOneWithSorter(ctx context.Context, collection string, sorter []string, condition bsoncodec.M, result interface{}) error
-	FindAllWithPage(ctx context.Context, collection string, sorter []string, page, perPage int64, condition bsoncodec.M, result interface{}) error
+	FindAllWithPage(ctx context.Context, collection string, sorter []string, page, perPage int64, condition bsoncodec.M, result interface{}) (int64, error)
 }
 
 type mongoRepository struct {
@@ -105,6 +105,11 @@ func (m mongoRepository) FindAllWithSorter(ctx context.Context, collection strin
 	return m.client.Database.Collection(collection).Find(ctx, condition).Sort(sorter...).All(result)
 }
 
-func (m mongoRepository) FindAllWithPage(ctx context.Context, collection string, sorter []string, page, perPage int64, condition bsoncodec.M, result interface{}) error {
-	return m.client.Database.Collection(collection).Find(ctx, condition).Sort(sorter...).Skip((page - 1) * perPage).Limit(perPage).All(result)
+func (m mongoRepository) FindAllWithPage(ctx context.Context, collection string, sorter []string, page, perPage int64, condition bsoncodec.M, result interface{}) (int64, error) {
+	col := m.client.Database.Collection(collection)
+	err := col.Find(ctx, condition).Sort(sorter...).Skip((page - 1) * perPage).Limit(perPage).All(result)
+	if err != nil {
+		return 0, err
+	}
+	return col.Find(ctx, condition).Count()
 }

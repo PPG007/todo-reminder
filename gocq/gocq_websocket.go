@@ -17,8 +17,20 @@ import (
 )
 
 var (
-	GoCqWebsocket goCq
+	goCqWs goCq
 )
+
+func GetGocqInstance() goCq {
+	t := viper.GetString("goCq.type")
+	switch t {
+	case "ws":
+		return goCqWs
+	case "http":
+		return &goCqHttp{}
+	default:
+		return gocqEmpty{}
+	}
+}
 
 const (
 	POST_TYPE_MESSAGE      = "message"
@@ -82,7 +94,7 @@ func init() {
 	go g.listenActionResponse(context.Background())
 	go g.HeartBeat(context.Background())
 	go g.InitSelfInfo(context.Background())
-	GoCqWebsocket = g
+	goCqWs = g
 }
 
 type WebsocketRequest struct {
@@ -329,7 +341,7 @@ func (e *EventBody) handleMessageEvent(ctx context.Context, ws *goCqWebsocket) e
 			return nil
 		}
 		if strings.Contains(content, "图片") {
-			absPath, fileName, err := openai.GenImage(ctx, strings.Join(strings.Split(content, "图片"), ""))
+			absPath, fileName, err := openai.GetOpenAIClient().GenImage(ctx, strings.Join(strings.Split(content, "图片"), ""))
 			if err != nil {
 				return ws.SendAtInGroup(ctx, cast.ToString(e.GroupId), cast.ToString(e.UserId), err.Error())
 			}
@@ -344,7 +356,7 @@ func (e *EventBody) handleMessageEvent(ctx context.Context, ws *goCqWebsocket) e
 			ws.lock.Unlock()
 			conversations := ws.conversations[e.UserId]
 			inputs, receivedMessages := transConversationsToSlice(conversations)
-			message, err := openai.GetResponseWithContext(ctx, content, inputs, receivedMessages)
+			message, err := openai.GetOpenAIClient().GetResponseWithContext(ctx, content, inputs, receivedMessages)
 			if err != nil {
 				message = err.Error()
 				ws.lock.Lock()

@@ -12,7 +12,7 @@ import (
 )
 
 func TestWSListFriends(t *testing.T) {
-	friends, err := gocq.GoCqWebsocket.ListFriends(context.Background())
+	friends, err := gocq.GetGocqInstance().ListFriends(context.Background())
 	assert.NoError(t, err)
 	for _, friend := range friends {
 		log.Println(friend)
@@ -20,17 +20,17 @@ func TestWSListFriends(t *testing.T) {
 }
 
 func TestWSAtInGroup(t *testing.T) {
-	err := gocq.GoCqWebsocket.SendAtInGroup(context.Background(), "484122864", "1658272229", "测试")
+	err := gocq.GetGocqInstance().SendAtInGroup(context.Background(), "484122864", "1658272229", "测试")
 	assert.NoError(t, err)
 }
 
 func TestWSSendImageInGroup(t *testing.T) {
-	err := gocq.GoCqWebsocket.SendGroupImageMessage(context.Background(), "484122864", "test.png", "/home/user/Pictures/test.png")
+	err := gocq.GetGocqInstance().SendGroupImageMessage(context.Background(), "484122864", "test.png", "/home/user/Pictures/test.png")
 	assert.NoError(t, err)
 }
 
 func TestWSSendPrivateMessage(t *testing.T) {
-	err := gocq.GoCqWebsocket.SendPrivateStringMessage(context.Background(), "123", "1658272229")
+	err := gocq.GetGocqInstance().SendPrivateStringMessage(context.Background(), "123", "1658272229")
 	assert.NoError(t, err)
 }
 

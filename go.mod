@@ -11,6 +11,7 @@ require (
 	github.com/qiniu/qmgo v1.1.4
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/sashabaranov/go-openai v1.5.7
+	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.14.0
