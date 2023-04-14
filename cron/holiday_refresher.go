@@ -15,6 +15,10 @@ const (
 	ZhiHuApi = "https://api.apihubs.cn/holiday/get"
 )
 
+func init() {
+	registerCronTask("@weekly", RefreshHoliday, true)
+}
+
 // TimorHolidayResponse https://timor.tech/api/holiday
 type TimorHolidayResponse struct {
 	Code    int                         `json:"code"`

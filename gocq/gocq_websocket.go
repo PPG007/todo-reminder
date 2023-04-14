@@ -18,6 +18,8 @@ import (
 
 var (
 	goCqWs goCq
+
+	recovery = make(chan bool)
 )
 
 func GetGocqInstance() goCq {
@@ -72,29 +74,63 @@ func init() {
 	if viper.GetString("goCq.type") != "ws" {
 		return
 	}
-	url := viper.GetString("goCq.websocketUri")
-	action, _, err := websocket.DefaultDialer.DialContext(context.Background(), fmt.Sprintf("%s/api", url), nil)
-	if err != nil {
-		panic(err)
-	}
-	event, _, err := websocket.DefaultDialer.DialContext(context.Background(), fmt.Sprintf("%s/event", url), nil)
-	if err != nil {
-		panic(err)
-	}
 	g := &goCqWebsocket{
 		friendList:          make(chan []FriendItem),
 		heartBeat:           make(chan HeartBeatStatus),
-		action:              action,
-		event:               event,
 		conversations:       make(map[int64][]Conversation),
 		lastReceivedTimeMap: make(map[int64]time.Time),
 		lock:                &sync.Mutex{},
+	}
+	err := g.dial(context.Background())
+	if err != nil {
+		panic(err)
 	}
 	go g.listenEventResponse(context.Background())
 	go g.listenActionResponse(context.Background())
 	go g.HeartBeat(context.Background())
 	go g.InitSelfInfo(context.Background())
 	goCqWs = g
+}
+
+func (g *goCqWebsocket) dial(ctx context.Context) error {
+	url := viper.GetString("goCq.websocketUri")
+	action, _, err := websocket.DefaultDialer.DialContext(context.Background(), fmt.Sprintf("%s/api", url), nil)
+	if err != nil {
+		return err
+	}
+	event, _, err := websocket.DefaultDialer.DialContext(context.Background(), fmt.Sprintf("%s/event", url), nil)
+	if err != nil {
+		return err
+	}
+	g.action = action
+	g.event = event
+	return nil
+}
+
+func (g *goCqWebsocket) close() error {
+	err := g.action.Close()
+	if err != nil {
+		return err
+	}
+	return g.event.Close()
+}
+
+func (g *goCqWebsocket) retry() {
+	g.close()
+	ctx := context.Background()
+	for {
+		if err := g.dial(ctx); err != nil {
+			log.Warn("Failed to connect gocq websocket, retrying...", map[string]interface{}{
+				"error": err.Error(),
+			})
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		break
+	}
+	log.Warn("Gocq websocket connected", nil)
+	go g.listenActionResponse(ctx)
+	go g.listenEventResponse(ctx)
 }
 
 type WebsocketRequest struct {
@@ -259,6 +295,12 @@ func (g *goCqWebsocket) listenActionResponse(ctx context.Context) {
 		resp := &WebsocketActionResponse{}
 		err := g.action.ReadJSON(resp)
 		if err != nil {
+			if websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err) {
+				return
+			}
+			log.Warn("Failed to read action response", map[string]interface{}{
+				"error": err.Error(),
+			})
 			continue
 		}
 		switch resp.Echo {
@@ -285,7 +327,12 @@ func (g *goCqWebsocket) listenEventResponse(ctx context.Context) {
 		event := &EventBody{}
 		err := g.event.ReadJSON(event)
 		if err != nil {
-			log.Warn("Failed to read event", map[string]interface{}{
+			if websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err) {
+				go g.retry()
+				log.Warn("Gocq websocket connection closed", nil)
+				return
+			}
+			log.Warn("Failed to read event response", map[string]interface{}{
 				"error": err.Error(),
 			})
 			continue

@@ -27,3 +27,7 @@ func Warn(message string, fields logrus.Fields) {
 func WarnTrace(msg string, fields logrus.Fields, trace []byte) {
 	logrus.WithFields(fields).WithField("backtrace", string(trace)).Warn(msg)
 }
+
+func ErrorTrace(msg string, fields logrus.Fields, trace []byte) {
+	logrus.WithFields(fields).WithField("backtrace", string(trace)).Warn(msg)
+}
