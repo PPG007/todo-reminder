@@ -10,9 +10,11 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 	"todo-reminder/constant"
+	"todo-reminder/log"
 )
 
 var (
@@ -168,4 +170,19 @@ func ExtractUserId(ctx context.Context) string {
 		return ginCtx.GetString(constant.GIN_KEY_USER_ID)
 	}
 	return ""
+}
+
+func FuncWithRecovery(fn func()) func() {
+	return func() {
+		defer func() {
+			if r := recover(); r != nil {
+				stack := make([]byte, 4096)
+				stack = stack[:runtime.Stack(stack, false)]
+				log.ErrorTrace("Panic in goroutine", map[string]interface{}{
+					"err": r,
+				}, stack)
+			}
+		}()
+		fn()
+	}
 }

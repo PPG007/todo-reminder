@@ -1,29 +1,39 @@
 package cron
 
-import "github.com/robfig/cron/v3"
-
-var (
-	c *cron.Cron
+import (
+	"github.com/robfig/cron/v3"
+	"todo-reminder/util"
 )
 
-func init() {
-	go RefreshHoliday()
-	go SyncUser()
-	c = cron.New()
-	_, err := c.AddFunc("@every 20s", Remind)
-	if err != nil {
-		panic(err)
-	}
-	_, err = c.AddFunc("@every 1m", SyncUser)
-	if err != nil {
-		panic(err)
-	}
-	_, err = c.AddFunc("@weekly", RefreshHoliday)
-	if err != nil {
-		panic(err)
-	}
+var (
+	c     *cron.Cron
+	tasks []cronTask
+)
+
+type cronTask struct {
+	fn             func()
+	spec           string
+	needRunAtStart bool
+}
+
+func registerCronTask(spec string, fn func(), needRunAtStart bool) {
+	tasks = append(tasks, cronTask{
+		fn:             util.FuncWithRecovery(fn),
+		spec:           spec,
+		needRunAtStart: needRunAtStart,
+	})
 }
 
 func Start() {
+	c = cron.New()
+	for _, task := range tasks {
+		_, err := c.AddFunc(task.spec, task.fn)
+		if err != nil {
+			panic(err)
+		}
+		if task.needRunAtStart {
+			go task.fn()
+		}
+	}
 	c.Start()
 }

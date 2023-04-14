@@ -7,6 +7,10 @@ import (
 	"todo-reminder/model"
 )
 
+func init() {
+	registerCronTask("@every 1m", SyncUser, true)
+}
+
 func SyncUser() {
 	ctx := context.Background()
 	userIds, err := gocq.GetGocqInstance().ListFriends(ctx)

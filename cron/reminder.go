@@ -6,6 +6,10 @@ import (
 	"todo-reminder/repository/bsoncodec"
 )
 
+func init() {
+	registerCronTask("@every 20s", Remind, false)
+}
+
 func Remind() {
 	ctx := context.Background()
 	records, err := model.CTodoRecord.ListNeedRemindOnes(ctx)
