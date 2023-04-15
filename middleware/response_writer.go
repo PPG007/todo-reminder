@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	registerMiddleware(responseWriter, 100)
+	registerMiddleware(responseWriter, 3)
 }
 
 type responseWriterMiddleware struct {

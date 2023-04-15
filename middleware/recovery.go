@@ -22,7 +22,7 @@ func recovery(ctx *gin.Context) {
 				"error": fmt.Sprintf("%v", err),
 			}, stack)
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, map[string]interface{}{
-				"message": err,
+				"message": fmt.Sprintf("%v", err),
 			})
 		}
 	}()
