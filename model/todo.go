@@ -44,6 +44,7 @@ type Todo struct {
 	Content       string             `json:"content" bson:"content"`
 	UserId        string             `json:"userId" bson:"userId"`
 	RemindSetting RemindSetting      `json:"remindSetting" bson:"remindSetting"`
+	Images        []string           `json:"images" bson:"images,omitempty"`
 }
 
 func (t *Todo) Create(ctx context.Context) error {
@@ -114,6 +115,7 @@ func (t *Todo) Upsert(ctx context.Context) error {
 				"content":       t.Content,
 				"userId":        t.UserId,
 				"remindSetting": t.RemindSetting,
+				"images":        t.Images,
 			},
 			"$setOnInsert": bsoncodec.M{
 				"isDeleted": false,
@@ -157,6 +159,7 @@ func (*Todo) GenNextRecord(ctx context.Context, id bsoncodec.ObjectId, isFirst b
 		NeedRemind: t.NeedRemind,
 		Content:    t.Content,
 		TodoId:     t.Id,
+		Images:     t.Images,
 	}
 	if t.NeedRemind && t.RemindSetting.IsRepeatable {
 		r.IsRepeatable = true

@@ -251,6 +251,23 @@ func (g *goCqWebsocket) SendPrivateStringMessage(ctx context.Context, message, u
 	return g.action.WriteJSON(req)
 }
 
+func (g *goCqWebsocket) SendPrivateImageMessage(ctx context.Context, userId string, fileName, fileUrl string) error {
+	req := WebsocketRequest{
+		Action: SEND_PRIVATE_MESSAGE_ENDPOINT,
+		Params: map[string]interface{}{
+			"user_id": cast.ToInt64(userId),
+			"message": map[string]interface{}{
+				"type": "image",
+				"data": map[string]interface{}{
+					"file": fileName,
+					"url":  fileUrl,
+				},
+			},
+		},
+	}
+	return g.action.WriteJSON(req)
+}
+
 func (g *goCqWebsocket) SendGroupImageMessage(ctx context.Context, groupId string, fileName, filePath string) error {
 	req := WebsocketRequest{
 		Action: SEND_GROUP_MESSAGE_ENDPOINT,

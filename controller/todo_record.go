@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -120,16 +121,22 @@ type ListTodoRecordsResponse struct {
 	Total int64              `json:"total"`
 }
 type TodoRecordDetail struct {
-	Id               string `json:"id"`
-	RemindAt         string `json:"remindAt"`
-	HasBeenDone      bool   `json:"hasBeenDone"`
-	Content          string `json:"content"`
-	DoneAt           string `json:"doneAt"`
-	NeedRemind       bool   `json:"needRemind"`
-	IsRepeatable     bool   `json:"isRepeatable"`
-	RepeatType       string `json:"repeatType"`
-	RepeatDateOffset int    `json:"repeatDateOffset"`
-	TodoId           string `json:"todoId"`
+	Id               string  `json:"id"`
+	RemindAt         string  `json:"remindAt"`
+	HasBeenDone      bool    `json:"hasBeenDone"`
+	Content          string  `json:"content"`
+	DoneAt           string  `json:"doneAt"`
+	NeedRemind       bool    `json:"needRemind"`
+	IsRepeatable     bool    `json:"isRepeatable"`
+	RepeatType       string  `json:"repeatType"`
+	RepeatDateOffset int     `json:"repeatDateOffset"`
+	TodoId           string  `json:"todoId"`
+	Images           []Image `json:"images"`
+}
+
+type Image struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
 }
 
 func formatListCondition(listCondition ListCondition) ListCondition {
@@ -166,7 +173,7 @@ func ListTodoRecords(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, ListTodoRecordsResponse{
-		Items: formatTodoRecordDetails(todoRecords),
+		Items: formatTodoRecordDetails(ctx, todoRecords),
 		Total: total,
 	})
 }
@@ -180,11 +187,12 @@ func GetTodoRecordById(ctx *gin.Context) {
 	record, err := model.CTodoRecord.GetById(ctx, bsoncodec.ObjectIdHex(id))
 	if err != nil {
 		ReturnError(ctx, err)
+		return
 	}
-	ctx.JSON(http.StatusOK, formatTodoRecordDetail(record))
+	ctx.JSON(http.StatusOK, formatTodoRecordDetail(ctx, record))
 }
 
-func formatTodoRecordDetail(record model.TodoRecord) TodoRecordDetail {
+func formatTodoRecordDetail(ctx context.Context, record model.TodoRecord) TodoRecordDetail {
 	return TodoRecordDetail{
 		Id:               record.Id.Hex(),
 		RemindAt:         util.TransTimeToRFC3339(record.RemindAt),
@@ -196,13 +204,24 @@ func formatTodoRecordDetail(record model.TodoRecord) TodoRecordDetail {
 		RepeatType:       record.RepeatType,
 		RepeatDateOffset: record.RepeatDateOffset,
 		TodoId:           record.TodoId.Hex(),
+		Images: func() []Image {
+			result := make([]Image, 0, len(record.Images))
+			for _, image := range record.Images {
+				url, _ := util.MinioClient.SignObjectUrl(ctx, image)
+				result = append(result, Image{
+					Name: image,
+					Url:  url,
+				})
+			}
+			return result
+		}(),
 	}
 }
 
-func formatTodoRecordDetails(records []model.TodoRecord) []TodoRecordDetail {
+func formatTodoRecordDetails(ctx context.Context, records []model.TodoRecord) []TodoRecordDetail {
 	details := make([]TodoRecordDetail, 0, len(records))
 	for _, record := range records {
-		details = append(details, formatTodoRecordDetail(record))
+		details = append(details, formatTodoRecordDetail(ctx, record))
 	}
 	return details
 }

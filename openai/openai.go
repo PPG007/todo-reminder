@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/sashabaranov/go-openai"
 	"github.com/spf13/viper"
@@ -17,14 +18,15 @@ import (
 )
 
 var (
-	client *openAIClient
+	client                *openAIClient
+	openaiNotAvailableErr = errors.New("openai not available")
 )
 
 func init() {
 	if !viper.GetBool("chatgpt.enabled") {
 		return
 	}
-	config := openai.DefaultConfig(os.Getenv("OPENAI_SK"))
+	config := openai.DefaultConfig(viper.GetString("openai.sk"))
 	proxyUrl, err := url.Parse(viper.GetString("chatgpt.proxyUrl"))
 	if err != nil {
 		panic(err)
@@ -61,21 +63,21 @@ func (o openAIEmpty) ChatCompletion(ctx context.Context, input string) (string, 
 	log.Warn("Calling ChatCompletion", map[string]interface{}{
 		"input": input,
 	})
-	return "", nil
+	return "", openaiNotAvailableErr
 }
 
 func (o openAIEmpty) GenImage(ctx context.Context, input string) (string, string, error) {
 	log.Warn("Calling GenImage", map[string]interface{}{
 		"input": input,
 	})
-	return "", "", nil
+	return "", "", openaiNotAvailableErr
 }
 
 func (o openAIEmpty) GenImageVariation(ctx context.Context, imagePath string) (string, error) {
 	log.Warn("Calling GenImageVariation", map[string]interface{}{
 		"imagePath": imagePath,
 	})
-	return "", nil
+	return "", openaiNotAvailableErr
 }
 
 func (o openAIEmpty) GetResponseWithContext(ctx context.Context, input string, inputs, receivedMessages []string) (string, error) {
@@ -84,7 +86,7 @@ func (o openAIEmpty) GetResponseWithContext(ctx context.Context, input string, i
 		"inputs":           inputs,
 		"receivedMessages": receivedMessages,
 	})
-	return "", nil
+	return "", openaiNotAvailableErr
 }
 
 type openAIClient struct {

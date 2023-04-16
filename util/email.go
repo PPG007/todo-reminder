@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/spf13/viper"
 	"gopkg.in/gomail.v2"
-	"os"
 )
 
 func SendEmail(ctx context.Context, to string, subject, content string) error {
@@ -19,5 +18,5 @@ func SendEmail(ctx context.Context, to string, subject, content string) error {
 		viper.GetString("email.server"),
 		viper.GetInt("email.port"),
 		viper.GetString("email.username"),
-		os.Getenv("EMAIL_PASSWORD")).DialAndSend(m)
+		viper.GetString("email.password")).DialAndSend(m)
 }

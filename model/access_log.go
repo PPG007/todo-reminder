@@ -13,6 +13,7 @@ import (
 	"todo-reminder/repository"
 	"todo-reminder/repository/bsoncodec"
 	"todo-reminder/util"
+	"unicode/utf8"
 )
 
 const (
@@ -26,6 +27,7 @@ var (
 type AccessLog struct {
 	Id            bsoncodec.ObjectId `bson:"_id"`
 	Body          string             `bson:"body"`
+	BodySize      int64              `bson:"bodySize"`
 	Method        string             `bson:"method"`
 	URL           string             `bson:"URL"`
 	RemoteAddress string             `bson:"remoteAddress,omitempty"`
@@ -42,12 +44,18 @@ type AccessLog struct {
 
 func (*AccessLog) Init(ctx *gin.Context) AccessLog {
 	buf := bytes.Buffer{}
-	buf.ReadFrom(ctx.Request.Body)
+	size, _ := buf.ReadFrom(ctx.Request.Body)
 	ctx.Request.Body = io.NopCloser(&buf)
 	host, port, _ := net.SplitHostPort(strings.TrimSpace(ctx.Request.RemoteAddr))
 	return AccessLog{
-		Id:            bsoncodec.NewObjectId(),
-		Body:          buf.String(),
+		Id: bsoncodec.NewObjectId(),
+		Body: func() string {
+			if utf8.Valid(buf.Bytes()) {
+				return buf.String()
+			}
+			return ""
+		}(),
+		BodySize:      size,
 		Method:        ctx.Request.Method,
 		URL:           ctx.Request.URL.RequestURI(),
 		RemoteAddress: host,
