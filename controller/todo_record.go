@@ -163,10 +163,6 @@ func ListTodoRecords(ctx *gin.Context) {
 		"userId":      userId,
 	}
 	req.ListCondition = formatListCondition(req.ListCondition)
-	req.ListCondition.OrderBy = []string{"-remindAt"}
-	if !req.HasBeenDone {
-		req.ListCondition.OrderBy = []string{"remindAt"}
-	}
 	total, todoRecords, err := model.CTodoRecord.ListByPagination(ctx, condition, req.ListCondition.Page, req.ListCondition.PerPage, req.ListCondition.OrderBy)
 	if err != nil {
 		ReturnError(ctx, err)
