@@ -2,15 +2,19 @@ token:
   key: "?E(H+MbQeThWmZq4t6w9z$C&F)J@NcRf"
   validDays: 30
 mongodb:
-  uri: "mongodb://192.168.5.34:27017"
+  uri: "mongodb://localhost:27018"
   database: "todo"
 goCq:
   uri: "http://localhost:5700"
   websocketUri: "ws://localhost:5700"
   type: "ws"
+  admin: "1658272229"
 chatgpt:
-  enabled: false
+  enabled: true
   proxyUrl: "http://127.0.0.1:8889"
+  enableContext: false
+  maxToken: 1000
+  streamTimeoutMinute: 5
 gin:
   port: 8080
 email:
@@ -20,7 +24,7 @@ email:
 alert:
   receiver: "1658272229@qq.com"
 minio:
-  enabled: true
+  enabled: false
   bucket: todo
   urlExpiredSeconds: 3600
-  endpoint: "192.168.5.34:9000"
+  endpoint: "101.42.32.192:9000"

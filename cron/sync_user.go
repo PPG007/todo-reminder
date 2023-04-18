@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"github.com/spf13/cast"
 	"todo-reminder/gocq"
 	"todo-reminder/log"
 	"todo-reminder/model"
@@ -13,23 +14,25 @@ func init() {
 
 func SyncUser() {
 	ctx := context.Background()
-	userIds, err := gocq.GetGocqInstance().ListFriends(ctx)
+	friends, err := gocq.GetGocqInstance().ListFriendsWithFullInfo(ctx)
 	if err != nil {
 		return
 	}
-	for _, id := range userIds {
-		err := UpsertUser(ctx, id)
+	for _, friend := range friends {
+		err := UpsertUser(ctx, friend.UserId, friend.Nickname)
 		if err != nil {
 			log.Warn("Failed to sync user", map[string]interface{}{
-				"userId": id,
+				"user":  friend,
+				"error": err.Error(),
 			})
 		}
 	}
 }
 
-func UpsertUser(ctx context.Context, userId string) error {
+func UpsertUser(ctx context.Context, userId int64, nickname string) error {
 	user := model.User{
-		UserId: userId,
+		UserId:   cast.ToString(userId),
+		Nickname: nickname,
 	}
 	return user.UpsertWithoutPassword(ctx)
 }

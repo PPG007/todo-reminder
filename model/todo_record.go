@@ -6,7 +6,6 @@ import (
 	"github.com/qiniu/qmgo/options"
 	mgo_option "go.mongodb.org/mongo-driver/mongo/options"
 	"time"
-	"todo-reminder/gocq"
 	"todo-reminder/repository"
 	"todo-reminder/repository/bsoncodec"
 	"todo-reminder/util"
@@ -194,23 +193,6 @@ func (*TodoRecord) MarkAsReminded(ctx context.Context, ids []bsoncodec.ObjectId)
 	}
 	_, err := repository.Mongo.UpdateAll(ctx, C_TODO_RECORD, condition, updater)
 	return err
-}
-
-func (t *TodoRecord) Notify(ctx context.Context) error {
-	err := gocq.GetGocqInstance().SendPrivateStringMessage(ctx, t.Content, t.UserId)
-	if err != nil {
-		return err
-	}
-	for _, image := range t.Images {
-		url, err := util.MinioClient.SignObjectUrl(ctx, image)
-		if err == nil {
-			err = gocq.GetGocqInstance().SendPrivateImageMessage(ctx, t.UserId, image, url)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func (*TodoRecord) ListByPagination(ctx context.Context, condition bsoncodec.M, page, perPage int64, orderBy []string) (int64, []TodoRecord, error) {

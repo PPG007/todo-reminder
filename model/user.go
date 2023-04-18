@@ -2,8 +2,10 @@ package model
 
 import (
 	"context"
+	"errors"
 	"github.com/qiniu/qmgo"
 	"github.com/qiniu/qmgo/options"
+	"github.com/spf13/viper"
 	mgo_option "go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 	"time"
@@ -31,13 +33,15 @@ func init() {
 }
 
 type User struct {
-	Id        bsoncodec.ObjectId `json:"id" bson:"_id"`
-	UserId    string             `json:"userId" bson:"userId"`
-	Password  string             `json:"password" bson:"password"`
-	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"`
-	UpdatedAt time.Time          `json:"updatedAt" bson:"updatedAt"`
-	IsDeleted bool               `json:"isDeleted" bson:"isDeleted"`
-	IsEnabled bool               `json:"isEnabled" bson:"isEnabled"`
+	Id             bsoncodec.ObjectId `json:"id" bson:"_id"`
+	UserId         string             `json:"userId" bson:"userId"`
+	Nickname       string             `bson:"nickname"`
+	Password       string             `json:"password" bson:"password"`
+	CreatedAt      time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedAt      time.Time          `json:"updatedAt" bson:"updatedAt"`
+	IsDeleted      bool               `json:"isDeleted" bson:"isDeleted"`
+	IsEnabled      bool               `json:"isEnabled" bson:"isEnabled"`
+	OpenAIApproved bool               `json:"openAIApproved" bson:"openAIApproved"`
 }
 
 func (*User) Create(ctx context.Context, userId, password string) error {
@@ -106,6 +110,7 @@ func (u *User) UpsertWithoutPassword(ctx context.Context) error {
 		Update: bsoncodec.M{
 			"$set": bsoncodec.M{
 				"updatedAt": time.Now(),
+				"nickname":  u.Nickname,
 			},
 			"$setOnInsert": bsoncodec.M{
 				"createdAt": time.Now(),
@@ -131,4 +136,55 @@ func (*User) UpdatePassword(ctx context.Context, userId, password string) error 
 		},
 	}
 	return repository.Mongo.UpdateOne(ctx, C_USER, condition, updater)
+}
+
+func (u *User) GetAdmin(ctx context.Context) (User, error) {
+	return u.GetByUserId(ctx, viper.GetString("goCq.admin"))
+}
+
+func (u *User) ApproveOpenAI(ctx context.Context, userId string) (User, error) {
+	user, err := u.GetByUserId(ctx, userId)
+	if err != nil {
+		return User{}, err
+	}
+	if user.OpenAIApproved {
+		return User{}, errors.New("user has already been approved openAI")
+	}
+	condition := bsoncodec.M{
+		"_id": user.Id,
+	}
+	updater := bsoncodec.M{
+		"$set": bsoncodec.M{
+			"openAIApproved": true,
+		},
+	}
+	err = repository.Mongo.UpdateOne(ctx, C_USER, condition, updater)
+	return user, err
+}
+
+func (u *User) BlockOpenAI(ctx context.Context, userId string) (User, error) {
+	user, err := u.GetByUserId(ctx, userId)
+	if err != nil {
+		return User{}, err
+	}
+	if !user.OpenAIApproved {
+		return User{}, errors.New("user has already been blocked openAI")
+	}
+	condition := bsoncodec.M{
+		"_id": user.Id,
+	}
+	updater := bsoncodec.M{
+		"$set": bsoncodec.M{
+			"openAIApproved": false,
+		},
+	}
+	err = repository.Mongo.UpdateOne(ctx, C_USER, condition, updater)
+	return user, err
+}
+
+func (*User) HandleFriendAdded(ctx context.Context, userId string) error {
+	user := User{
+		UserId: userId,
+	}
+	return user.UpsertWithoutPassword(ctx)
 }

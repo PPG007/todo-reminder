@@ -15,6 +15,7 @@ type goCq interface {
 	SendGroupImageMessage(ctx context.Context, groupId string, fileName, filePath string) error
 	SendAtInGroup(ctx context.Context, groupId, userId string, message string) error
 	SendPrivateImageMessage(ctx context.Context, userId string, fileName, fileUrl string) error
+	ListFriendsWithFullInfo(ctx context.Context) ([]FriendItem, error)
 }
 
 type gocqEmpty struct {
@@ -22,6 +23,11 @@ type gocqEmpty struct {
 
 func (g gocqEmpty) ListFriends(ctx context.Context) ([]string, error) {
 	log.Warn("Calling ListFriends", nil)
+	return nil, nil
+}
+
+func (g gocqEmpty) ListFriendsWithFullInfo(ctx context.Context) ([]FriendItem, error) {
+	log.Warn("Calling ListFriendsWithFullInfo", nil)
 	return nil, nil
 }
 
@@ -67,6 +73,9 @@ const (
 	GET_FRIEND_LIST_ENDPOINT      = "get_friend_list"
 	SEND_PRIVATE_MESSAGE_ENDPOINT = "send_private_msg"
 	SEND_GROUP_MESSAGE_ENDPOINT   = "send_group_msg"
+	GET_MESSAGE_DETAIL_ENDPOINT   = "get_msg"
+	DELETE_FRIEND_ENDPOINT        = "delete_friend"
+	HANDLE_FRIEND_ENDPOINT        = "set_friend_add_request"
 	GET_LOGIN_INFO                = "get_login_info"
 )
 
@@ -77,7 +86,7 @@ type BaseResponse[T any] struct {
 }
 
 type FriendItem struct {
-	NickName string `json:"nickName"`
+	Nickname string `json:"nickname"`
 	Remark   string `json:"remark"`
 	UserId   int64  `json:"user_id"`
 }
@@ -91,13 +100,12 @@ func (g goCqHttp) genUrl(endpoint string) string {
 }
 
 func (g goCqHttp) ListFriends(ctx context.Context) ([]string, error) {
-	client := util.GetRestClient[BaseResponse[[]FriendItem]]()
-	resp, err := client.Get(ctx, g.genUrl(GET_FRIEND_LIST_ENDPOINT), nil, nil)
+	resp, err := g.ListFriendsWithFullInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
-	userIds := make([]string, 0, len(resp.Data))
-	for _, item := range resp.Data {
+	userIds := make([]string, 0, len(resp))
+	for _, item := range resp {
 		userIds = append(userIds, cast.ToString(item.UserId))
 	}
 	return userIds, nil
@@ -150,4 +158,13 @@ func (g goCqHttp) SendPrivateImageMessage(ctx context.Context, userId string, fi
 		},
 	})
 	return err
+}
+
+func (g goCqHttp) ListFriendsWithFullInfo(ctx context.Context) ([]FriendItem, error) {
+	client := util.GetRestClient[BaseResponse[[]FriendItem]]()
+	resp, err := client.Get(ctx, g.genUrl(GET_FRIEND_LIST_ENDPOINT), nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Data, nil
 }

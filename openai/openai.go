@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"github.com/sashabaranov/go-openai"
 	"github.com/spf13/viper"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 	"todo-reminder/log"
 	"todo-reminder/repository/bsoncodec"
@@ -38,7 +40,10 @@ func init() {
 		Timeout: time.Minute,
 	}
 	client = &openAIClient{
-		client: openai.NewClientWithConfig(config),
+		client:        openai.NewClientWithConfig(config),
+		enableContext: viper.GetBool("chatgpt.enableContext"),
+		maxToken:      viper.GetInt("chatgpt.maxToken"),
+		streamTimeout: time.Duration(viper.GetInt("chatgpt.streamTimeoutMinute")) * time.Minute,
 	}
 }
 
@@ -54,6 +59,7 @@ type OpenAI interface {
 	GenImage(ctx context.Context, input string) (string, string, error)
 	GenImageVariation(ctx context.Context, imagePath string) (string, error)
 	GetResponseWithContext(ctx context.Context, input string, inputs, receivedMessages []string) (string, error)
+	GetStreamResponse(ctx context.Context, input string) (string, error)
 }
 
 type openAIEmpty struct {
@@ -89,8 +95,18 @@ func (o openAIEmpty) GetResponseWithContext(ctx context.Context, input string, i
 	return "", openaiNotAvailableErr
 }
 
+func (o openAIEmpty) GetStreamResponse(ctx context.Context, input string) (string, error) {
+	log.Warn("Calling GetStreamResponse", map[string]interface{}{
+		"input": input,
+	})
+	return "", openaiNotAvailableErr
+}
+
 type openAIClient struct {
-	client *openai.Client
+	client        *openai.Client
+	maxToken      int
+	enableContext bool
+	streamTimeout time.Duration
 }
 
 func (c *openAIClient) ChatCompletion(ctx context.Context, input string) (string, error) {
@@ -102,6 +118,7 @@ func (c *openAIClient) ChatCompletion(ctx context.Context, input string) (string
 				Content: input,
 			},
 		},
+		MaxTokens: c.maxToken,
 	})
 	if err != nil {
 		return "", err
@@ -170,29 +187,70 @@ func (c *openAIClient) GenImageVariation(ctx context.Context, imagePath string) 
 
 func (c *openAIClient) GetResponseWithContext(ctx context.Context, input string, inputs, receivedMessages []string) (string, error) {
 	messages := make([]openai.ChatCompletionMessage, 0, len(receivedMessages)+len(inputs)+1)
-	for i, _ := range inputs {
-		if i >= len(receivedMessages) {
-			break
+	if c.enableContext {
+		for i, _ := range inputs {
+			if i >= len(receivedMessages) {
+				break
+			}
+			messages = append(messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: inputs[i],
+			})
+			messages = append(messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: receivedMessages[i],
+			})
 		}
-		messages = append(messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleUser,
-			Content: inputs[i],
-		})
-		messages = append(messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleAssistant,
-			Content: receivedMessages[i],
-		})
 	}
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
 		Content: input,
 	})
 	resp, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model:    openai.GPT3Dot5Turbo,
-		Messages: messages,
+		Model:     openai.GPT3Dot5Turbo,
+		Messages:  messages,
+		MaxTokens: c.maxToken,
 	})
 	if err != nil {
 		return "", err
 	}
 	return resp.Choices[0].Message.Content, nil
+}
+
+func (c *openAIClient) GetStreamResponse(ctx context.Context, input string) (string, error) {
+	stream, err := c.client.CreateChatCompletionStream(ctx, openai.ChatCompletionRequest{
+		Model:  openai.GPT3Dot5Turbo,
+		Stream: true,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: input,
+			},
+		},
+		MaxTokens: c.maxToken,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer stream.Close()
+	var resp []string
+	start := time.Now()
+	for {
+		if time.Now().Sub(start) > c.streamTimeout {
+			return "", errors.New("response timeout")
+		}
+		response, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			return strings.Join(resp, ""), nil
+		}
+		if err != nil {
+			return "", err
+		}
+
+		resp = append(resp, response.Choices[0].Delta.Content)
+		if response.Choices[0].FinishReason == "length" {
+			resp = append(resp, "... The response of your question has used the max tokens")
+			return strings.Join(resp, ""), nil
+		}
+	}
 }

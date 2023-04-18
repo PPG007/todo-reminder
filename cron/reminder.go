@@ -2,8 +2,10 @@ package cron
 
 import (
 	"context"
+	"todo-reminder/gocq"
 	"todo-reminder/model"
 	"todo-reminder/repository/bsoncodec"
+	"todo-reminder/util"
 )
 
 func init() {
@@ -19,7 +21,7 @@ func Remind() {
 	var succeedIds []bsoncodec.ObjectId
 	var succeedTodoIds []bsoncodec.ObjectId
 	for _, record := range records {
-		if err := record.Notify(ctx); err == nil {
+		if err := notify(ctx, record); err == nil {
 			succeedIds = append(succeedIds, record.Id)
 			succeedTodoIds = append(succeedTodoIds, record.TodoId)
 		}
@@ -28,4 +30,21 @@ func Remind() {
 	//for _, id := range succeedTodoIds {
 	//	model.CTodo.GenNextRecord(ctx, id, false)
 	//}
+}
+
+func notify(ctx context.Context, record model.TodoRecord) error {
+	err := gocq.GetGocqInstance().SendPrivateStringMessage(ctx, record.Content, record.UserId)
+	if err != nil {
+		return err
+	}
+	for _, image := range record.Images {
+		url, err := util.MinioClient.SignObjectUrl(ctx, image)
+		if err == nil {
+			err = gocq.GetGocqInstance().SendPrivateImageMessage(ctx, record.UserId, image, url)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
