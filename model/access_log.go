@@ -6,8 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
 	"io"
-	"net"
-	"strings"
 	"time"
 	"todo-reminder/constant"
 	"todo-reminder/repository"
@@ -46,7 +44,6 @@ func (*AccessLog) Init(ctx *gin.Context) AccessLog {
 	buf := bytes.Buffer{}
 	size, _ := buf.ReadFrom(ctx.Request.Body)
 	ctx.Request.Body = io.NopCloser(&buf)
-	host, port, _ := net.SplitHostPort(strings.TrimSpace(ctx.Request.RemoteAddr))
 	return AccessLog{
 		Id: bsoncodec.NewObjectId(),
 		Body: func() string {
@@ -58,8 +55,8 @@ func (*AccessLog) Init(ctx *gin.Context) AccessLog {
 		BodySize:      size,
 		Method:        ctx.Request.Method,
 		URL:           ctx.Request.URL.RequestURI(),
-		RemoteAddress: host,
-		RemotePort:    port,
+		RemoteAddress: ctx.GetHeader(constant.HEADER_REMOTE_IP),
+		RemotePort:    ctx.GetHeader(constant.HEADER_REMOTE_PORT),
 		Referer:       ctx.Request.Referer(),
 		RequestId:     util.ExtractRequestId(ctx),
 		UserId:        util.ExtractUserId(ctx),
