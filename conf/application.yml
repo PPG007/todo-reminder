@@ -1,26 +1,28 @@
 token:
-  key: "?E(H+MbQeThWmZq4t6w9z$C&F)J@NcRf"
+  key: '?E(H+MbQeThWmZq4t6w9z$C&F)J@NcRf'
   validDays: 30
 mongodb:
-  uri: "mongodb://192.168.5.34:27017"
-  database: "todo"
+  uri: 'mongodb://192.168.5.34:27017'
+  database: 'todo'
 goCq:
-  uri: "http://localhost:5700"
-  websocketUri: "ws://localhost:5700"
-  type: "ws"
+  uri: 'http://localhost:5700'
+  websocketUri: 'ws://localhost:5700'
+  type: 'ws'
 chatgpt:
   enabled: false
-  proxyUrl: "http://127.0.0.1:8889"
+  proxyUrl: 'http://127.0.0.1:8889'
 gin:
   port: 8080
 email:
-  server: "smtp.163.com"
+  server: 'smtp.163.com'
   port: 465
-  username: "kostonzhuang@163.com"
+  username: 'kostonzhuang@163.com'
 alert:
-  receiver: "1658272229@qq.com"
+  receiver: '1658272229@qq.com'
+admin:
+  qq: 1658272229
 minio:
   enabled: true
   bucket: todo
   urlExpiredSeconds: 3600
-  endpoint: "192.168.5.34:9000"
+  endpoint: '192.168.5.34:9000'
